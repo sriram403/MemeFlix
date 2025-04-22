@@ -1,2 +1,12 @@
-node_modules/
-memeflix.db
+# Node modules
+**/node_modules/
+
+# Database file
+**/memeflix.db
+
+# Media files (optional, but recommended)
+meme_files/
+
+# OS generated files
+.DS_Store
+Thumbs.db

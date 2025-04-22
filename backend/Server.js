@@ -50,6 +50,42 @@ app.get('/api/memes', (req, res) => {
   });
 });
 
+// GET endpoint to fetch all memes (already implemented)
+app.get('/api/memes', (req, res) => { /* ... */ });
+
+// *** NEW: GET endpoint to serve specific media files ***
+app.get('/media/:filename', (req, res) => {
+  // 1. Extract the filename from the URL parameter
+  const filename = req.params.filename;
+
+  // 2. Construct the full path to the requested file
+  //    __dirname is the directory of server.js (backend)
+  //    '../meme_files' goes up one level and then into the meme_files directory
+  const filePath = path.join(__dirname, '../meme_files', filename);
+
+  // 3. Send the file back to the client
+  //    'res.sendFile()' handles setting the correct Content-Type header
+  //    based on the file extension and streaming the file.
+  res.sendFile(filePath, (err) => {
+    // Optional callback to handle errors during file sending
+    if (err) {
+      // Log the error on the server side
+      console.error(`Error sending file ${filename}:`, err.message);
+
+      // Check if the error is because the file doesn't exist (ENOENT)
+      if (err.code === "ENOENT") {
+        res.status(404).json({ error: 'File not found.' });
+      } else {
+        // For other errors (e.g., permissions), send a generic 500 error
+        res.status(500).json({ error: 'Failed to send file.' });
+      }
+    } else {
+      // Optional: Log successful file sending
+      // console.log(`Sent file: ${filename}`);
+    }
+  });
+});
+
 // Example: Original root route (keep it for testing)
 app.get('/', (req, res) => {
   res.send('Hello World from Memeflix Backend!');
