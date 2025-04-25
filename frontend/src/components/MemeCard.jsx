@@ -18,9 +18,9 @@ function MemeCard({ meme }) {
         return <img src={mediaUrl} alt={meme.title} loading="lazy" />; // GIFs are also images
       case 'video':
         return (
-          <video /* controls // Add controls if you want play/pause buttons */
-                 /* muted    // Mute by default to avoid autoplay noise */
-                 /* loop     // Loop short videos/gifs? */
+          <video  controls // Add controls if you want play/pause buttons */
+                  muted    // Mute by default to avoid autoplay noise */
+                  loop = {false}     // Loop short videos/gifs? */
                  /* autoPlay // Autoplay on load? Use with caution */
                  playsInline /* Important for mobile */
                  src={mediaUrl}
