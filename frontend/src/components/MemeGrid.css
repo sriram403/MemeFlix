@@ -1,13 +1,32 @@
-/* Basic styles for MemeGrid.css */
+/* frontend/src/components/MemeGrid.css */
 .meme-grid {
-    padding: 20px; /* Add space around the grid area */
-    /* We will add grid or flexbox styles here later to arrange meme cards */
-    color: #ccc; /* Temporary text color for the placeholder */
+    padding: 20px;
+    color: #ccc;
   }
   
-  .loading, .info-message {
+  .loading, .info-message, .error-message { /* Add .error-message here */
       padding: 40px 20px;
       text-align: center;
       font-size: 1.2em;
       color: #aaa;
+  }
+  
+  .error-message { /* Specific style for errors */
+      color: #e50914; /* Use a red color for errors */
+      font-weight: bold;
+  }
+  
+  /* Basic list styling */
+  .meme-grid ul {
+      list-style: none; /* Remove default bullet points */
+      padding: 0;
+  }
+  
+  .meme-grid li {
+      background-color: #333; /* Dark background for list items */
+      margin-bottom: 10px; /* Space between items */
+      padding: 10px 15px; /* Padding inside items */
+      border-radius: 4px; /* Rounded corners */
+      color: #e5e5e5;
+      border-left: 3px solid #e50914; /* Accent border */
   }
