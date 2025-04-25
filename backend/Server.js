@@ -50,9 +50,6 @@ app.get('/api/memes', (req, res) => {
   });
 });
 
-// GET endpoint to fetch all memes (already implemented)
-app.get('/api/memes', (req, res) => { /* ... */ });
-
 // *** NEW: GET endpoint to serve specific media files ***
 app.get('/media/:filename', (req, res) => {
   // 1. Extract the filename from the URL parameter
