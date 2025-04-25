@@ -1,32 +1,38 @@
 /* frontend/src/components/MemeGrid.css */
-.meme-grid {
+
+.meme-grid-container { /* Style the optional outer container */
     padding: 20px;
-    color: #ccc;
-  }
-  
-  .loading, .info-message, .error-message { /* Add .error-message here */
-      padding: 40px 20px;
-      text-align: center;
-      font-size: 1.2em;
-      color: #aaa;
-  }
-  
-  .error-message { /* Specific style for errors */
-      color: #e50914; /* Use a red color for errors */
-      font-weight: bold;
-  }
-  
-  /* Basic list styling */
-  .meme-grid ul {
-      list-style: none; /* Remove default bullet points */
-      padding: 0;
-  }
-  
-  .meme-grid li {
-      background-color: #333; /* Dark background for list items */
-      margin-bottom: 10px; /* Space between items */
-      padding: 10px 15px; /* Padding inside items */
-      border-radius: 4px; /* Rounded corners */
-      color: #e5e5e5;
-      border-left: 3px solid #e50914; /* Accent border */
-  }
+}
+
+.meme-grid-container h2 { /* Style the heading */
+    color: #e5e5e5;
+    margin-bottom: 20px;
+    font-size: 1.4em;
+}
+
+.meme-grid {
+  display: grid; /* Use CSS Grid layout */
+  /* Create columns that are flexible (min 200px, max 1fr - fractional unit) */
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px; /* Space between grid items (cards) */
+  padding: 0; /* Remove padding if container has it */
+  color: #ccc; /* Remove this later if not needed */
+}
+
+/* ... Keep loading, info-message, error-message styles ... */
+.loading, .info-message, .error-message {
+    padding: 40px 20px;
+    text-align: center;
+    font-size: 1.2em;
+    color: #aaa;
+}
+.error-message {
+    color: #e50914;
+    font-weight: bold;
+}
+
+/* Remove the old ul/li styles */
+/*
+.meme-grid ul { ... }
+.meme-grid li { ... }
+*/

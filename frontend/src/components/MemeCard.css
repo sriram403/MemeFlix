@@ -1,0 +1,60 @@
+/* frontend/src/components/MemeCard.css */
+
+.meme-card {
+    background-color: #2a2a2a; /* Slightly lighter than main background */
+    border-radius: 5px;
+    overflow: hidden; /* Hide anything that might stick out (e.g., image corners before loading) */
+    margin: 10px;     /* Add space around each card */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Subtle shadow */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Smooth hover effect */
+    cursor: pointer; /* Indicate it's clickable (though it does nothing yet) */
+    display: flex; /* Use flexbox for internal layout */
+    flex-direction: column; /* Stack media and info vertically */
+  }
+  
+  .meme-card:hover {
+    transform: scale(1.03); /* Slightly enlarge card on hover */
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5); /* Increase shadow on hover */
+  }
+  
+  .meme-card-media {
+    width: 100%;
+    /* Change the aspect ratio here */
+    /* From: aspect-ratio: 16 / 9; */
+    /* To a wider ratio (e.g., 2:1) */
+    aspect-ratio: 2 / 1; /* Height will be 50% of the width */
+    /* Or try even wider if needed: */
+    /* aspect-ratio: 2.5 / 1; */
+    /* aspect-ratio: 3 / 1; */
+  
+    background-color: #141414;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; /* Add overflow hidden here too to help contain 'cover' */
+  }
+  
+  .meme-card-media img,
+  .meme-card-media video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* This will crop more vertically now */
+  }
+  
+/* Optional: Adjust min-height of info section if needed */
+.meme-card-info {
+  padding: 8px 10px; /* Maybe slightly less padding */
+  background-color: #1f1f1f;
+  min-height: 45px; /* Adjust if title looks too cramped */
+}
+
+.meme-card-title {
+   /* Styles likely okay, but check appearance */
+   color: #e5e5e5;
+   font-size: 0.85em; /* Maybe slightly smaller font */
+   margin: 0 0 4px 0;
+   white-space: nowrap;
+   overflow: hidden;
+   text-overflow: ellipsis;
+}
