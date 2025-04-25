@@ -1,23 +1,25 @@
-/* Styles for App.css */
 .App {
-    /* Optional: Set min-height if body doesn't cover full viewport */
-     min-height: 100vh;
-     display: flex;
-     flex-direction: column; /* Stack children (Navbar, main, footer) vertically */
-  }
-  
-  main {
-     flex-grow: 1; /* Allow the main content area to take up available space */
-     /* Background color is set globally in index.css */
-  }
-  
-  footer {
-    background-color: #141414; /* Same as navbar background */
-    color: #808080;         /* Dimmer text color for footer */
-    padding: 15px 20px;
-    text-align: center;
-    font-size: 0.8em;
-    margin-top: auto; /* Pushes footer down if content is short */
-    border-top: 1px solid #303030; /* Subtle line at the top */
-  
-  }
+   width: 100%; /* Ensure App takes full width of its parent (#root) */
+   min-height: 100vh; /* Ensure App takes full height */
+   display: flex;
+   flex-direction: column;
+   flex-grow: 1; /* Allow App to grow and fill the #root container */
+ }
+ 
+ main {
+   flex-grow: 1;
+   width: 100%; /* Explicitly set main content area width */
+   /* We might want some padding inside main later, but not margin that pushes it */
+   /* padding: 0 20px; /* Example padding */
+ }
+ 
+ footer {
+   background-color: #141414;
+   color: #808080;
+   padding: 15px 0; /* Adjust padding if needed, maybe 0 horizontal padding */
+   text-align: center;
+   font-size: 0.8em;
+   /* margin-top: auto; NO LONGER NEEDED with flex-grow on main and App */
+   border-top: 1px solid #303030;
+   width: 100%; /* Explicitly set footer width */
+ }
