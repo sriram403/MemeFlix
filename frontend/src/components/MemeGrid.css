@@ -1,0 +1,13 @@
+/* Basic styles for MemeGrid.css */
+.meme-grid {
+    padding: 20px; /* Add space around the grid area */
+    /* We will add grid or flexbox styles here later to arrange meme cards */
+    color: #ccc; /* Temporary text color for the placeholder */
+  }
+  
+  .loading, .info-message {
+      padding: 40px 20px;
+      text-align: center;
+      font-size: 1.2em;
+      color: #aaa;
+  }

@@ -1,18 +1,20 @@
-import './App.css'; // Keep the CSS import for now
+import './App.css';
+import Navbar from './components/Navbar'; // Import the Navbar component
+import MemeGrid from './components/MemeGrid'; // Import the MemeGrid component
 
 function App() {
-  // We removed the useState hook and counter logic
-
   return (
     <div className="App">
-      <header className="App-header">
-        <h1>Memeflix</h1>
-      </header>
+      {/* Use the Navbar component */}
+      <Navbar />
+
       <main>
-        {/* Meme content will go here later */}
-        <p>Loading memes...</p>
+        {/* Use the MemeGrid component */}
+        <MemeGrid />
       </main>
+
       <footer>
+        {/* Keep the simple footer for now */}
         <p>Memeflix Footer - All Rights Reserved (locally)</p>
       </footer>
     </div>

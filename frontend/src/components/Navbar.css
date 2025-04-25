@@ -1,0 +1,39 @@
+/* Basic styles for Navbar.css */
+.navbar {
+    background-color: #141414; /* Slightly darker background for navbar */
+    padding: 10px 20px;       /* Add some space inside the navbar (top/bottom, left/right) */
+    color: #e5e5e5;           /* Light grey text color */
+    display: flex;            /* Use Flexbox to arrange items horizontally */
+    justify-content: space-between; /* Space out brand, links, search */
+    align-items: center;      /* Vertically center items */
+    border-bottom: 1px solid #303030; /* Subtle line at the bottom */
+  }
+  
+  .navbar-brand {
+    font-size: 1.5em;       /* Make the "Memeflix" text bigger */
+    font-weight: bold;
+    color: #e50914;         /* Netflix-red color for brand (optional) */
+  }
+  
+  .navbar-links a {
+    color: #e5e5e5;
+    text-decoration: none;  /* Remove underline from links */
+    margin-left: 15px;      /* Space out the links */
+    font-size: 0.9em;
+  }
+  
+  .navbar-links a:hover {
+    color: #ffffff;         /* Make links white on hover */
+  }
+  
+  .navbar-search input {
+    padding: 5px 8px;
+    background-color: #333;
+    border: 1px solid #555;
+    color: #fff;
+    border-radius: 3px; /* Slightly rounded corners */
+  }
+  
+  .navbar-search input::placeholder {
+    color: #aaa; /* Style the placeholder text */
+  }

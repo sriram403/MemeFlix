@@ -15,11 +15,21 @@
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center; /* Center content initially? Maybe remove later */
-  min-width: 320px;
-  min-height: 100vh;
+  margin: 0; /* Remove default browser margin */
+  /* REMOVE display: flex; */
+  /* REMOVE place-items: center; */
+  min-width: 320px; /* Keep minimum width */
+  min-height: 100vh; /* Keep minimum height */
+  /* Background color is set in :root or can be set here */
+  /* background-color: #242424; */ /* Ensure it's set somewhere */
+}
+
+/* Optional: Ensure the root div also spans full height */
+#root {
+   width: 100%;
+   min-height: 100vh;
+   display: flex; /* Use flexbox on the root div */
+   flex-direction: column; /* Stack App component vertically */
 }
 
 /* You can probably remove most other default styles below this */
