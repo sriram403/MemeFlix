@@ -1,51 +1,42 @@
 // frontend/src/components/MemeGrid.jsx
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+// Remove useState, useEffect, axios imports if no longer needed here
+import React from 'react';
 import './MemeGrid.css';
-import MemeCard from './MemeCard'; // *** IMPORT MemeCard ***
+import MemeCard from './MemeCard';
 
-const API_BASE_URL = 'http://localhost:3001';
+// Receive props from App.jsx: { memes, loading, error }
+function MemeGrid({ memes, loading, error }) {
 
-function MemeGrid() {
-  const [memes, setMemes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // State and useEffect are removed - data comes via props
 
-  useEffect(() => {
-    const fetchMemes = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await axios.get(`${API_BASE_URL}/api/memes`);
-        setMemes(response.data.memes);
-      } catch (err) {
-        console.error("Error fetching memes:", err);
-        setError('Failed to load memes. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchMemes();
-  }, []);
+  // --- Conditional Rendering based on PROPS ---
+  if (loading) {
+    return <div className="loading">Loading memes...</div>;
+  }
 
-  if (loading) { /* ... loading state ... */ }
-  if (error) { /* ... error state ... */ }
-  if (memes.length === 0 && !loading) { /* ... empty state ... */ } // Adjusted empty state check
+  if (error) {
+    // Display the specific error message passed down from App
+    return <div className="error-message">Error: {error}</div>;
+  }
 
-  // --- Render the grid of MemeCards ---
+  // Use the length of the passed-in memes array
+  if (!memes || memes.length === 0) {
+     return <div className="info-message">No memes found! Try a different search or check the backend.</div>;
+  }
+
+  // --- Render the grid of MemeCards using PROPS ---
   return (
-    <div className="meme-grid-container"> {/* Optional outer container */}
-      <h2>Browse Memes</h2>
-      <div className="meme-grid"> {/* This div will act as the grid layout container */}
-        {/* Map over the memes array and render a MemeCard for each meme */}
-        {memes.map((meme) => (
-          // Pass the entire 'meme' object as a prop to MemeCard
-          // Use the unique 'meme.id' as the key
-          <MemeCard key={meme.id} meme={meme} />
-        ))}
-      </div>
-    </div>
-  );
-}
+    <div className="meme-grid-container">
+       {/* Maybe hide heading during search results? Optional */}
+       {/* <h2>Browse Memes</h2> */}
+       <div className="meme-grid">
+         {/* Map over the memes PROP */}
+         {memes.map((meme) => (
+           <MemeCard key={meme.id} meme={meme} />
+         ))}
+       </div>
+     </div>
+   );
+ }
 
-export default MemeGrid;
+ export default MemeGrid;

@@ -32,8 +32,29 @@
     border: 1px solid #555;
     color: #fff;
     border-radius: 3px; /* Slightly rounded corners */
+    margin-right: 5px;  /* Add space between input and button */
   }
   
   .navbar-search input::placeholder {
     color: #aaa; /* Style the placeholder text */
+  }
+
+  .navbar-search {
+    display: flex; /* Align input and button */
+    align-items: center;
+  }
+
+  .navbar-search button {
+    padding: 5px 10px;
+    background-color: #e50914; /* Netflix red */
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.2s ease;
+  }
+  
+  .navbar-search button:hover {
+    background-color: #f40612; /* Slightly brighter red on hover */
   }

@@ -50,6 +50,47 @@ app.get('/api/memes', (req, res) => {
   });
 });
 
+app.get('/api/memes/search', (req, res) => {
+  // 1. Get the search query from the URL query parameters (?q=...)
+  const query = req.query.q;
+
+  // 2. Basic validation: If no query is provided, return an error or empty list
+  if (!query) {
+    return res.status(400).json({ error: 'Search query parameter "q" is required.' });
+    // Alternatively, you could return all memes or an empty list:
+    // return res.status(200).json({ memes: [] });
+  }
+
+  // 3. Construct the SQL query for searching using LIKE and wildcards (%)
+  //    We'll search in title, description, and tags columns.
+  //    Using || for string concatenation (standard SQL, works in SQLite)
+  //    Using lower() to make the search case-insensitive.
+  const sql = `
+    SELECT * FROM memes
+    WHERE
+      lower(title) LIKE ? OR
+      lower(description) LIKE ? OR
+      lower(tags) LIKE ?
+    ORDER BY uploaded_at DESC
+  `;
+
+  // 4. Prepare the search term for LIKE query (add wildcards)
+  const searchTerm = `%${query.toLowerCase()}%`; // Convert query to lowercase and add %
+
+  // 5. Execute the query using db.all() with parameterized query
+  //    Pass the searchTerm three times, once for each placeholder (?)
+  db.all(sql, [searchTerm, searchTerm, searchTerm], (err, rows) => {
+    if (err) {
+      console.error("Error searching memes:", err.message);
+      res.status(500).json({ error: 'Failed to search memes in database.' });
+      return;
+    }
+    // 6. Send back the matching rows as JSON
+    res.status(200).json({ memes: rows });
+  });
+
+});
+
 // *** NEW: GET endpoint to serve specific media files ***
 app.get('/media/:filename', (req, res) => {
   // 1. Extract the filename from the URL parameter

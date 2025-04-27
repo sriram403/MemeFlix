@@ -1,20 +1,67 @@
+// frontend/src/App.jsx
+import React, { useState, useEffect } from 'react'; // Import hooks
+import axios from 'axios';                         // Import axios
 import './App.css';
-import Navbar from './components/Navbar'; // Import the Navbar component
-import MemeGrid from './components/MemeGrid'; // Import the MemeGrid component
+import Navbar from './components/Navbar';
+import MemeGrid from './components/MemeGrid';
+
+const API_BASE_URL = 'http://localhost:3001'; // Backend URL
 
 function App() {
+  // --- State Variables ---
+  const [memes, setMemes] = useState([]);           // Lifted from MemeGrid
+  const [loading, setLoading] = useState(true);    // Lifted from MemeGrid
+  const [error, setError] = useState(null);        // Lifted from MemeGrid
+  const [searchTerm, setSearchTerm] = useState(''); // NEW: State for the search query
+
+  // --- Data Fetching Effect (Now in App.jsx) ---
+  useEffect(() => {
+    const fetchMemes = async () => {
+      setLoading(true);
+      setError(null);
+      let url = `${API_BASE_URL}/api/memes`; // Default URL
+
+      // If there's a search term, change the URL to the search endpoint
+      if (searchTerm) {
+        // Use encodeURIComponent to handle special characters in the search term
+        url = `${API_BASE_URL}/api/memes/search?q=${encodeURIComponent(searchTerm)}`;
+      }
+
+      try {
+        const response = await axios.get(url);
+        setMemes(response.data.memes || []); // Ensure memes is always an array
+      } catch (err) {
+        console.error("Error fetching memes:", err);
+        // More specific error based on search?
+        setError(searchTerm ? `Failed to search memes for "${searchTerm}".` : 'Failed to load memes.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMemes(); // Execute fetch
+
+  // *** IMPORTANT: Add searchTerm to the dependency array ***
+  // This effect will re-run whenever searchTerm changes
+  }, [searchTerm]);
+
+  // --- Search Handler Function ---
+  // This function will be passed down to Navbar
+  const handleSearch = (query) => {
+    setSearchTerm(query); // Update the search term state
+  };
+
   return (
     <div className="App">
-      {/* Use the Navbar component */}
-      <Navbar />
+      {/* Pass the handleSearch function and current searchTerm down to Navbar */}
+      <Navbar onSearch={handleSearch} currentSearchTerm={searchTerm} />
 
       <main>
-        {/* Use the MemeGrid component */}
-        <MemeGrid />
+        {/* Pass the fetched data and loading/error states down to MemeGrid */}
+        <MemeGrid memes={memes} loading={loading} error={error} />
       </main>
 
       <footer>
-        {/* Keep the simple footer for now */}
         <p>Memeflix Footer - All Rights Reserved (locally)</p>
       </footer>
     </div>
