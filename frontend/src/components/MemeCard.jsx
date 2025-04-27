@@ -5,7 +5,7 @@ import './MemeCard.css'; // CSS for styling the card
 const MEDIA_BASE_URL = 'http://localhost:3001/media';
 
 // The component receives a single 'meme' object as a prop
-function MemeCard({ meme }) {
+function MemeCard({ meme , onCardClick }) {
 
   // Helper function to render the correct media element (img or video)
   const renderMedia = () => {
@@ -34,18 +34,21 @@ function MemeCard({ meme }) {
         return <p>Unsupported media type</p>; // Fallback
     }
   };
-
+  const handleCardClick = () => {
+    // Call the function passed down from App (via MemeGrid)
+    // Pass this card's specific meme data back up
+    onCardClick(meme);
+  };
+  
   return (
-    <div className="meme-card">
+    // Add onClick handler to the main card div
+    <div className="meme-card" onClick={handleCardClick}>
       <div className="meme-card-media">
-        {renderMedia()} {/* Call helper function to render img or video */}
+        {renderMedia()}
       </div>
       <div className="meme-card-info">
         <h3 className="meme-card-title">{meme.title}</h3>
-        {/* Optional: Add description or tags later */}
-        {/* <p className="meme-card-tags">Tags: {meme.tags}</p> */}
       </div>
-      {/* Optional: Add overlay/buttons for actions on hover later */}
     </div>
   );
 }

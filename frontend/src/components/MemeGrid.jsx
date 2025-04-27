@@ -5,7 +5,7 @@ import './MemeGrid.css';
 import MemeCard from './MemeCard';
 
 // Receive props from App.jsx: { memes, loading, error }
-function MemeGrid({ memes, loading, error }) {
+function MemeGrid({ memes, loading, error, onMemeClick }) {
 
   // State and useEffect are removed - data comes via props
 
@@ -27,16 +27,18 @@ function MemeGrid({ memes, loading, error }) {
   // --- Render the grid of MemeCards using PROPS ---
   return (
     <div className="meme-grid-container">
-       {/* Maybe hide heading during search results? Optional */}
-       {/* <h2>Browse Memes</h2> */}
-       <div className="meme-grid">
-         {/* Map over the memes PROP */}
-         {memes.map((meme) => (
-           <MemeCard key={meme.id} meme={meme} />
-         ))}
-       </div>
-     </div>
-   );
- }
+      <div className="meme-grid">
+        {memes.map((meme) => (
+          // Pass onMemeClick down to each MemeCard
+          <MemeCard
+            key={meme.id}
+            meme={meme}
+            onCardClick={onMemeClick} // Pass the function as 'onCardClick' prop
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
- export default MemeGrid;
+export default MemeGrid;

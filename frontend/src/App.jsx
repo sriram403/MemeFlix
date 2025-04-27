@@ -4,6 +4,7 @@ import axios from 'axios';                         // Import axios
 import './App.css';
 import Navbar from './components/Navbar';
 import MemeGrid from './components/MemeGrid';
+import MemeDetailModal from './components/MemeDetailModal'; // Import the modal component
 
 const API_BASE_URL = 'http://localhost:3001'; // Backend URL
 
@@ -13,6 +14,10 @@ function App() {
   const [loading, setLoading] = useState(true);    // Lifted from MemeGrid
   const [error, setError] = useState(null);        // Lifted from MemeGrid
   const [searchTerm, setSearchTerm] = useState(''); // NEW: State for the search query
+
+ // --- NEW: Modal State ---
+ const [selectedMeme, setSelectedMeme] = useState(null); // Holds the meme object for the modal
+ const [isModalOpen, setIsModalOpen] = useState(false); // Tracks if modal is open
 
   // --- Data Fetching Effect (Now in App.jsx) ---
   useEffect(() => {
@@ -51,19 +56,44 @@ function App() {
     setSearchTerm(query); // Update the search term state
   };
 
+  const openModal = (meme) => {
+    setSelectedMeme(meme);   // Set the selected meme data
+    setIsModalOpen(true);    // Set modal visibility to true
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);   // Set modal visibility to false
+    // Optionally reset selectedMeme after a delay for fade-out animation later
+    // setTimeout(() => setSelectedMeme(null), 300);
+     setSelectedMeme(null); // Reset selected meme immediately for now
+  };
+
   return (
     <div className="App">
-      {/* Pass the handleSearch function and current searchTerm down to Navbar */}
       <Navbar onSearch={handleSearch} currentSearchTerm={searchTerm} />
 
       <main>
-        {/* Pass the fetched data and loading/error states down to MemeGrid */}
-        <MemeGrid memes={memes} loading={loading} error={error} />
+        {/* Pass openModal function down to MemeGrid */}
+        <MemeGrid
+          memes={memes}
+          loading={loading}
+          error={error}
+          onMemeClick={openModal} // Pass the handler function as a prop
+        />
       </main>
 
       <footer>
         <p>Memeflix Footer - All Rights Reserved (locally)</p>
       </footer>
+
+      {/* --- Conditionally Render the Modal --- */}
+      {/* Only render the modal if isModalOpen is true */}
+      {isModalOpen && (
+        <MemeDetailModal
+          meme={selectedMeme} // Pass the selected meme data
+          onClose={closeModal}   // Pass the close handler function
+        />
+      )}
     </div>
   );
 }
