@@ -29,24 +29,67 @@ app.use(cors());
 // --- API Routes Will Go Here ---
 // GET endpoint to fetch all memes
 app.get('/api/memes', (req, res) => {
-  // SQL query to select all columns (*) from the 'memes' table
-  const sql = "SELECT * FROM memes ORDER BY uploaded_at DESC"; // Order by newest first
+  // 1. Get page and limit from query params, provide defaults
+  const page = parseInt(req.query.page || '1', 10); // Default to page 1
+  const limit = parseInt(req.query.limit || '2', 10); // Default to 12 memes per page
 
-  // Execute the query using db.all() because we expect multiple rows
-  // db.all(sql_query, [parameters], callback_function)
-  db.all(sql, [], (err, rows) => {
-    if (err) {
-      // If there's an error querying the database
-      console.error("Error fetching memes:", err.message);
-      // Send a 500 Internal Server Error status code and a JSON error message
-      res.status(500).json({ error: 'Failed to retrieve memes from database.' });
-      return; // Stop further execution in this callback
-    }
+  // Basic validation for positive integers
+  if (isNaN(page) || page < 1 || isNaN(limit) || limit < 1) {
+    return res.status(400).json({ error: 'Invalid page or limit parameter.' });
+  }
 
-    // If the query is successful
-    // 'rows' will be an array of objects, where each object represents a meme record
-    // Send a 200 OK status code and the fetched rows as JSON data
-    res.status(200).json({ memes: rows });
+  // 2. Calculate OFFSET for SQL query
+  //    OFFSET is how many records to skip (e.g., for page 2 with limit 10, offset is 10)
+  const offset = (page - 1) * limit;
+
+  // 3. Define SQL queries
+  //    Query to get the subset of memes for the current page
+  const sqlGetData = `
+    SELECT * FROM memes
+    ORDER BY uploaded_at DESC
+    LIMIT ?
+    OFFSET ?
+  `;
+  //    Query to get the total count of all memes
+  const sqlGetCount = `SELECT COUNT(*) as totalMemes FROM memes`;
+
+  // 4. Execute queries using Promise.all for concurrency (optional but cleaner)
+  //    We need both the total count and the page data
+  Promise.all([
+    // Promise wrapper for db.get (fetches total count)
+    new Promise((resolve, reject) => {
+      db.get(sqlGetCount, [], (err, row) => {
+        if (err) reject(err);
+        else resolve(row.totalMemes); // Resolve with the total count number
+      });
+    }),
+    // Promise wrapper for db.all (fetches memes for the current page)
+    new Promise((resolve, reject) => {
+      db.all(sqlGetData, [limit, offset], (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows); // Resolve with the array of memes for the page
+      });
+    })
+  ])
+  .then(([totalMemes, memesForPage]) => {
+    // 5. Calculate total pages
+    const totalPages = Math.ceil(totalMemes / limit);
+
+    // 6. Send response with paginated data and metadata
+    res.status(200).json({
+      memes: memesForPage, // Memes for the current page
+      pagination: {
+        currentPage: page,
+        totalPages: totalPages,
+        totalMemes: totalMemes,
+        limit: limit
+      }
+    });
+  })
+  .catch(err => {
+    // Handle errors from either query
+    console.error("Error fetching paginated memes:", err.message);
+    res.status(500).json({ error: 'Failed to retrieve memes from database.' });
   });
 });
 
