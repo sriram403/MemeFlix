@@ -6,7 +6,7 @@ import Navbar from './components/Navbar';
 import MemeGrid from './components/MemeGrid';
 import MemeDetailModal from './components/MemeDetailModal'; // Import the modal component
 import PaginationControls from './components/PaginationControls'; // Import PaginationControls
-
+import HeroBanner from './components/HeroBanner'; // Import HeroBanner
 
 const API_BASE_URL = 'http://localhost:3001'; // Backend URL
 const MEMES_PER_PAGE = 2; // Define items per page
@@ -26,7 +26,7 @@ function App() {
    const [currentPage, setCurrentPage] = useState(1);
    const [totalPages, setTotalPages] = useState(0);
    // We could store totalMemes too if needed
-
+   const featuredMeme = !loading && !error && memes.length > 0 ? memes[0] : null;
   // --- Data Fetching Effect (Now in App.jsx) ---
   // --- Updated Data Fetching Effect ---
   useEffect(() => {
@@ -113,6 +113,7 @@ function App() {
       <Navbar onSearch={handleSearch} currentSearchTerm={searchTerm} />
 
       <main>
+      {!searchTerm && <HeroBanner featuredMeme={featuredMeme} onPlayClick={openModal}/>}
         <MemeGrid
           memes={memes}
           loading={loading}
