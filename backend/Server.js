@@ -24,7 +24,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
 // 4. Apply Middleware
 app.use(cors());
 // Optional: Middleware to parse JSON request bodies (useful for POST/PUT later)
-// app.use(express.json());
+app.use(express.json());
 
 // --- API Routes Will Go Here ---
 // GET endpoint to fetch all memes
@@ -132,6 +132,54 @@ app.get('/api/memes/search', (req, res) => {
     res.status(200).json({ memes: rows });
   });
 
+});
+
+// *** NEW: Endpoint to UPVOTE a meme ***
+app.post('/api/memes/:id/upvote', (req, res) => {
+  const memeId = parseInt(req.params.id, 10);
+  if (isNaN(memeId)) {
+    return res.status(400).json({ error: 'Invalid meme ID.' });
+  }
+
+  // SQL to increment the upvotes count for the specific meme ID
+  // Using 'upvotes + 1' directly in the SET clause
+  const sql = `UPDATE memes SET upvotes = upvotes + 1 WHERE id = ?`;
+
+  db.run(sql, [memeId], function(err) { // Use function() to access this.changes
+    if (err) {
+      console.error(`Error upvoting meme ${memeId}:`, err.message);
+      return res.status(500).json({ error: 'Database error during upvote.' });
+    }
+    // Check if any row was actually updated
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Meme not found.' });
+    }
+    // Optionally, fetch the updated meme data and return it
+    // For now, just return success status
+    res.status(200).json({ message: 'Upvote successful.' /* , updatedVotes: ... */ });
+  });
+});
+
+// *** NEW: Endpoint to DOWNVOTE a meme ***
+app.post('/api/memes/:id/downvote', (req, res) => {
+  const memeId = parseInt(req.params.id, 10);
+  if (isNaN(memeId)) {
+    return res.status(400).json({ error: 'Invalid meme ID.' });
+  }
+
+  // SQL to increment the downvotes count
+  const sql = `UPDATE memes SET downvotes = downvotes + 1 WHERE id = ?`;
+
+  db.run(sql, [memeId], function(err) {
+    if (err) {
+      console.error(`Error downvoting meme ${memeId}:`, err.message);
+      return res.status(500).json({ error: 'Database error during downvote.' });
+    }
+    if (this.changes === 0) {
+      return res.status(404).json({ error: 'Meme not found.' });
+    }
+    res.status(200).json({ message: 'Downvote successful.' });
+  });
 });
 
 // *** NEW: GET endpoint to serve specific media files ***

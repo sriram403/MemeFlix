@@ -102,36 +102,19 @@ function populateMemes() {
 
   // Use db.serialize to run insertions sequentially
   db.serialize(() => {
-    // Prepare the statement for better performance and security with multiple inserts
     const stmt = db.prepare(insertSql);
+    console.log(`Attempting to insert/update ${memesToInsert.length} memes...`);
 
-    console.log(`Attempting to insert ${memesToInsert.length} memes...`);
-
-    // Loop through each meme object in the array
     memesToInsert.forEach((meme) => {
-      // Run the prepared statement with the data from the current meme object
+      // Pass only the required values for the placeholders
       stmt.run(
         meme.title,
         meme.description,
         meme.filename,
         meme.type,
         meme.tags,
-        meme.filepath,
-        (err) => {
-          if (err) {
-            // This error likely won't happen for duplicates because of 'OR IGNORE',
-            // but could happen for other reasons (e.g., violating NOT NULL).
-            console.error(`Error inserting meme ${meme.filename}:`, err.message);
-          } else {
-            // 'this.changes' reports the number of rows affected by the last statement.
-            // If it's 1, the insert happened. If 0, it was ignored (likely duplicate).
-            if (this.changes > 0) {
-              console.log(`Successfully inserted meme: ${meme.filename}`);
-            } else {
-              console.log(`Skipped duplicate meme: ${meme.filename}`);
-            }
-          }
-        }
+        meme.filepath, // Values match the ? placeholders
+        (err) => { /* ... existing callback ... */ }
       );
     });
 

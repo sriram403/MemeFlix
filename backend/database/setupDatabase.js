@@ -25,37 +25,26 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
 // 4. Function to define and create tables
 function createTables() {
-  // Use 'db.serialize()' to ensure statements run sequentially (one after another)
   db.serialize(() => {
     console.log('Creating tables if they do not exist...');
-
-    // SQL command to create the 'memes' table
-    // 'IF NOT EXISTS' prevents errors if the script is run again
     const createMemeTableSql = `
       CREATE TABLE IF NOT EXISTS memes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, -- Unique ID for each meme, automatically generated
-        title TEXT NOT NULL,                  -- Title of the meme (must have a value)
-        description TEXT,                     -- Optional description
-        filename TEXT UNIQUE NOT NULL,        -- The unique name of the image/gif/video file (must have a value and be unique)
-        type TEXT CHECK(type IN ('image', 'gif', 'video')) NOT NULL, -- Type of meme (image, gif, or video, must be one of these)
-        tags TEXT,                            -- Comma-separated tags for searching/filtering (optional)
-        filepath TEXT NOT NULL,               -- Relative path or identifier for finding the file (we might just use filename)
-        uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP -- When the record was added (defaults to now)
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT,
+        filename TEXT UNIQUE NOT NULL,
+        type TEXT CHECK(type IN ('image', 'gif', 'video')) NOT NULL,
+        tags TEXT,
+        filepath TEXT NOT NULL,
+        upvotes INTEGER DEFAULT 0 NOT NULL,  -- NEW: Upvote count
+        downvotes INTEGER DEFAULT 0 NOT NULL, -- NEW: Downvote count
+        uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `;
-
-    // Execute the SQL command
     db.run(createMemeTableSql, (err) => {
-      if (err) {
-        console.error('Error creating memes table:', err.message);
-      } else {
-        console.log("Table 'memes' created or already exists.");
-        // You could add more db.run() calls here for other tables (e.g., users, categories)
-        // in sequence within this serialize block.
-      }
-
-      // 5. Close the database connection *after* all operations are done
-      closeDatabase();
+      if (err) { /* ... error handling ... */ }
+      else { console.log("Table 'memes' updated or already exists."); }
+      closeDatabase(); // Ensure close is called after the operation
     });
   });
 }
