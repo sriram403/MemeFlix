@@ -206,6 +206,46 @@ app.get('/api/history', authenticateToken, (req, res) => {
     });
 });
 
+// --- *** NEW: Tags Route *** ---
+app.get('/api/tags/popular', (req, res) => {
+  // 1. Fetch all non-null/non-empty tag strings from the memes table
+  const sql = "SELECT tags FROM memes WHERE tags IS NOT NULL AND tags != ''";
+
+  db.all(sql, [], (err, rows) => {
+      if (err) {
+          console.error("Error fetching tags:", err.message);
+          return res.status(500).json({ error: 'Database error fetching tags.' });
+      }
+
+      // 2. Process the tags: split strings, trim whitespace, count occurrences
+      const tagCounts = {};
+      rows.forEach(row => {
+          const tags = row.tags.split(',') // Split by comma
+                     .map(tag => tag.trim().toLowerCase()) // Trim whitespace, lowercase
+                     .filter(tag => tag.length > 0); // Remove empty tags
+
+          tags.forEach(tag => {
+              // Basic filtering for potentially generic/unhelpful tags (optional)
+              // if (['and', 'the', 'a', 'is', 'of'].includes(tag)) return;
+
+              tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+          });
+      });
+
+      // 3. Convert counts to an array, sort by count (descending), take top N
+      const sortedTags = Object.entries(tagCounts) // [ [tag, count], [tag, count], ... ]
+          .sort(([, countA], [, countB]) => countB - countA) // Sort by count descending
+          .map(([tag, count]) => ({ tag: tag, count: count })); // Convert back to object format
+
+      // 4. Define how many top tags to return for rows
+      const numberOfTagsToReturn = parseInt(req.query.limit || '10', 10); // Default to top 10 tags
+      const popularTags = sortedTags.slice(0, numberOfTagsToReturn);
+
+      // 5. Return the list of popular tags
+      res.status(200).json({ popularTags: popularTags });
+  });
+});
+
 // --- Media Route ---
 app.get('/media/:filename', (req, res) => {
   const filename = req.params.filename;
