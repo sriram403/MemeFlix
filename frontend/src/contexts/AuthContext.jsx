@@ -1,14 +1,14 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { toast } from 'react-toastify';
 
 const API_BASE_URL = 'http://localhost:3001';
 
 const AuthContext = createContext(null);
 
-const axiosInstance = axios.create({ baseURL: API_BASE_URL });
+const axiosInstance = axios.create({
+    baseURL: API_BASE_URL,
+});
 
-// Interceptor to add token to requests
 axiosInstance.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('memeflix_token');
@@ -17,90 +17,147 @@ axiosInstance.interceptors.request.use(
         }
         return config;
     },
-    (error) => {
-        return Promise.reject(error);
-    }
+    (error) => Promise.reject(error)
 );
 
-
-// Create the provider component
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [token, setToken] = useState(() => localStorage.getItem('memeflix_token')); // Use function initializer
+    const [token, setToken] = useState(localStorage.getItem('memeflix_token'));
     const [loading, setLoading] = useState(true);
+    const [favoriteIds, setFavoriteIds] = useState(new Set());
+    const [loadingFavorites, setLoadingFavorites] = useState(false);
+
+    const fetchFavoriteIds = useCallback(async () => {
+        if (!token) {
+            setFavoriteIds(new Set());
+            setLoadingFavorites(false); // Ensure loading stops if no token
+            return;
+        }
+        setLoadingFavorites(true);
+        try {
+            const response = await axiosInstance.get('/api/favorites/ids');
+            setFavoriteIds(new Set(response.data.favoriteMemeIds || []));
+        } catch (error) {
+            console.error("Failed to fetch favorite IDs:", error);
+            // Decide error handling: maybe clear favorites or keep stale ones?
+            // Keeping stale ones might be less disruptive if it's a temp network error
+            // setFavoriteIds(new Set());
+        } finally {
+            setLoadingFavorites(false);
+        }
+    }, [token]);
+
+    const handleLogout = useCallback(() => {
+        setToken(null);
+        // No need to clear user/favorites here, useEffect handles it
+    }, []);
+
 
     useEffect(() => {
         if (token) {
             localStorage.setItem('memeflix_token', token);
-            setLoading(true); // Set loading true while verifying token
+            setLoading(true);
             axiosInstance.get('/api/auth/me')
-                .then(response => { setUser(response.data); })
-                .catch(() => { handleLogout(false); }) // Pass false to prevent redundant toast
-                .finally(() => { setLoading(false); });
+                .then(response => {
+                    setUser(response.data);
+                    fetchFavoriteIds(); // Fetch favorites after user is set
+                })
+                .catch(() => {
+                    console.error("Token validation failed or /me endpoint error.");
+                    handleLogout() // Use useCallback version
+                })
+                .finally(() => setLoading(false));
         } else {
             localStorage.removeItem('memeflix_token');
             setUser(null);
+            setFavoriteIds(new Set());
             setLoading(false);
         }
-        // Don't depend on handleLogout here
-    }, [token]);
+    }, [token, fetchFavoriteIds, handleLogout]); // Add handleLogout dependency
 
-    // Login function
     const login = async (username, password) => {
         try {
-            const response = await axiosInstance.post('/api/auth/login', { username, password });
+            const response = await axios.post(`${API_BASE_URL}/api/auth/login`, { username, password });
             if (response.data.accessToken) {
-                setToken(response.data.accessToken); // Trigger useEffect to save token and fetch user
-                // setUser(response.data.user); // User state will be set by useEffect after /me call
-                return true; // Indicate success
+                setToken(response.data.accessToken);
+                return { success: true };
             }
         } catch (error) {
-            console.error("Login failed:", error.response?.data?.error || error.message);
-            // Handle specific errors (e.g., invalid credentials) if needed
+            const errorMsg = error.response?.data?.error || error.message || "Login failed";
+            console.error("Login failed:", errorMsg);
+            return { success: false, error: errorMsg };
         }
-        return false; // Indicate failure
+        return { success: false, error: "Login failed. Unknown error." };
     };
 
-    // Registration function
     const register = async (username, email, password) => {
         try {
-            const response = await axiosInstance.post('/api/auth/register', { username, email, password });
-            // Maybe automatically log in after registration? Or just show success.
+            const response = await axios.post(`${API_BASE_URL}/api/auth/register`, { username, email, password });
             console.log("Registration successful:", response.data);
-            return true; // Indicate success
+            return { success: true };
         } catch (error) {
-            console.error("Registration failed:", error.response?.data?.error || error.message);
-            // Handle specific errors (e.g., user exists)
-        }
-         return false; // Indicate failure
-    };
-
-    // Logout function
-    // Updated logout to accept flag and show toast
-    const handleLogout = (showToast = true) => {
-        setToken(null); // Triggers useEffect to clear storage and user
-        if (showToast) {
-            toast.success("You have been logged out.");
+            const errorMsg = error.response?.data?.error || error.message || "Registration failed";
+            console.error("Registration failed:", errorMsg);
+            return { success: false, error: errorMsg };
         }
     };
 
-    // Value provided by the context
+    const addFavorite = useCallback(async (memeId) => {
+        if (!user) return false;
+        const originalFavorites = new Set(favoriteIds);
+        setFavoriteIds(prev => new Set(prev).add(memeId));
+
+        try {
+            await axiosInstance.post(`/api/favorites/${memeId}`);
+            return true;
+        } catch (error) {
+            console.error("Failed to add favorite:", error);
+            setFavoriteIds(originalFavorites);
+            // Maybe return error message here?
+            return false;
+        }
+    }, [user, favoriteIds]);
+
+    const removeFavorite = useCallback(async (memeId) => {
+        if (!user) return false;
+        const originalFavorites = new Set(favoriteIds);
+        setFavoriteIds(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(memeId);
+            return newSet;
+        });
+
+        try {
+            await axiosInstance.delete(`/api/favorites/${memeId}`);
+            return true;
+        } catch (error) {
+            console.error("Failed to remove favorite:", error);
+            setFavoriteIds(originalFavorites);
+            return false;
+        }
+    }, [user, favoriteIds]);
+
     const value = {
         user,
         token,
         loading,
         login,
         register,
-        logout: handleLogout, // Provide the updated handler
+        logout: handleLogout,
         isAuthenticated: !!user,
+        favoriteIds,
+        loadingFavorites,
+        addFavorite,
+        removeFavorite,
+        isFavorite: (memeId) => favoriteIds.has(memeId),
     };
 
     return (
         <AuthContext.Provider value={value}>
-            {!loading && children}
+            {children}
         </AuthContext.Provider>
     );
 };
 
-export const useAuth = () => { return useContext(AuthContext); };
+export const useAuth = () => useContext(AuthContext);
 export { axiosInstance };

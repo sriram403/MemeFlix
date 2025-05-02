@@ -1,70 +1,76 @@
-// frontend/src/components/MemeCard.jsx
 import React from 'react';
-// No longer needs axios here
 import './MemeCard.css';
+import './FavoriteButton.css';
+import { useAuth } from '../contexts/AuthContext';
 
 const MEDIA_BASE_URL = 'http://localhost:3001/media';
-// API_BASE_URL removed - voting handled by prop
 
-// Receive meme, onCardClick, and onVote props
-function MemeCard({ meme, onCardClick, onVote }) {
+function MemeCard({ meme, onCardClick, onVote, onFavoriteToggle }) {
+  const { isAuthenticated, isFavorite, loadingFavorites } = useAuth();
 
-  // Calculate score (upvotes/downvotes come from the meme prop)
+  if (!meme) return null; // Handle case where meme data might be missing
+
   const score = meme.upvotes - meme.downvotes;
 
-  // --- Voting Handlers ---
-  // These now call the onVote prop passed from App
   const handleUpvote = (event) => {
-    event.stopPropagation(); // Prevent card click
-    onVote(meme.id, 'upvote'); // Call parent handler with ID and type
+    event.stopPropagation();
+    if(onVote) onVote(meme.id, 'upvote');
   };
 
   const handleDownvote = (event) => {
-    event.stopPropagation(); // Prevent card click
-    onVote(meme.id, 'downvote'); // Call parent handler with ID and type
+    event.stopPropagation();
+    if(onVote) onVote(meme.id, 'downvote');
   };
 
-  // --- Media Rendering ---
+  const handleFavoriteButtonClick = (event) => {
+      event.stopPropagation();
+      if (isAuthenticated && !loadingFavorites && onFavoriteToggle) {
+         onFavoriteToggle(meme.id);
+      } else if (!isAuthenticated) {
+          alert("Please log in to manage your list.");
+      }
+  };
+
   const renderMedia = () => {
     const mediaUrl = `${MEDIA_BASE_URL}/${meme.filename}`;
     switch (meme.type) {
-      case 'image':
-      case 'gif':
-        return <img src={mediaUrl} alt={meme.title} loading="lazy" />;
-      case 'video':
-        return (
-          <video controls muted loop={false} playsInline src={mediaUrl} title={meme.title} preload="metadata">
-              Your browser does not support the video tag.
-          </video>
-        );
-      default:
-        return <p>Unsupported media type</p>;
+      case 'image': case 'gif': return <img src={mediaUrl} alt={meme.title} loading="lazy" />;
+      case 'video': return <video controls muted loop={false} playsInline src={mediaUrl} title={meme.title} preload="metadata">Video not supported.</video>;
+      default: return <p>Unsupported media type</p>;
     }
   };
 
-  // --- Card Click Handler ---
   const handleCardClick = () => {
-    // Only call if onCardClick is actually provided (it should be)
-    if (onCardClick) {
-       onCardClick(meme);
-    }
+    if (onCardClick) onCardClick(meme);
   };
+
+  const isCurrentlyFavorite = isFavorite(meme.id);
 
   return (
     <div className="meme-card" onClick={handleCardClick}>
       <div className="meme-card-media">
-        {renderMedia()}
+         {isAuthenticated && (
+            <button
+                className={`favorite-button ${isCurrentlyFavorite ? 'is-favorite' : ''}`}
+                onClick={handleFavoriteButtonClick}
+                title={isCurrentlyFavorite ? "Remove from My List" : "Add to My List"}
+                disabled={loadingFavorites}
+                aria-label={isCurrentlyFavorite ? "Remove from My List" : "Add to My List"}
+            >
+                {isCurrentlyFavorite ? '✓' : '+'}
+            </button>
+         )}
+         {renderMedia()}
       </div>
       <div className="meme-card-info">
-        <h3 className="meme-card-title">{meme.title}</h3>
-        {/* Use vote counts directly from the meme prop */}
+        <h3 className="meme-card-title">{meme.title || 'Untitled Meme'}</h3>
         <div className="meme-card-actions">
-           <button className="vote-button upvote" onClick={handleUpvote}>
-             👍 <span className="vote-count">{meme.upvotes}</span>
+           <button className="vote-button upvote" onClick={handleUpvote} aria-label="Upvote">
+             👍 <span className="vote-count">{meme.upvotes ?? 0}</span>
            </button>
-           <span className="score">Score: {score}</span>
-           <button className="vote-button downvote" onClick={handleDownvote}>
-             👎 <span className="vote-count">{meme.downvotes}</span>
+           <span className="score" aria-label={`Current score ${score}`}>Score: {score}</span>
+           <button className="vote-button downvote" onClick={handleDownvote} aria-label="Downvote">
+             👎 <span className="vote-count">{meme.downvotes ?? 0}</span>
            </button>
         </div>
       </div>

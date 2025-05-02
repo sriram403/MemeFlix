@@ -1,34 +1,27 @@
-// frontend/src/components/PaginationControls.jsx
 import React from 'react';
 import './PaginationControls.css';
 
-// Props: currentPage, totalPages, onPageChange
 function PaginationControls({ currentPage, totalPages, onPageChange }) {
 
+  if(totalPages <= 1) return null; // Don't render if only one page or less
+
   const handlePrevious = () => {
-    onPageChange(currentPage - 1); // Call handler from App
+    if(currentPage > 1) onPageChange(currentPage - 1);
   };
 
   const handleNext = () => {
-    onPageChange(currentPage + 1); // Call handler from App
+    if(currentPage < totalPages) onPageChange(currentPage + 1);
   };
 
-  // Basic rendering - could add page numbers later
   return (
     <div className="pagination-controls">
-      <button
-        onClick={handlePrevious}
-        disabled={currentPage <= 1} // Disable if on first page
-      >
+      <button onClick={handlePrevious} disabled={currentPage <= 1} aria-label="Go to previous page">
         « Previous
       </button>
-      <span className="page-info">
+      <span className="page-info" aria-live="polite" aria-atomic="true">
         Page {currentPage} of {totalPages}
       </span>
-      <button
-        onClick={handleNext}
-        disabled={currentPage >= totalPages} // Disable if on last page
-      >
+      <button onClick={handleNext} disabled={currentPage >= totalPages} aria-label="Go to next page">
         Next »
       </button>
     </div>

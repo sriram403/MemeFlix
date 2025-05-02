@@ -1,17 +1,13 @@
-// frontend/src/components/Navbar.jsx
-// You can copy-paste the whole file content below
-
 import React, { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'; // Added useSearchParams
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './Navbar.css';
 
-// Receive onAuthPage prop
-function Navbar({ onAuthPage }) {
-    const [inputValue, setInputValue] = useState('');
+function Navbar() {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [inputValue, setInputValue] = useState(searchParams.get('search') || '');
     const { user, logout, isAuthenticated } = useAuth();
     const navigate = useNavigate();
-    const [searchParams, setSearchParams] = useSearchParams(); // Hook to manipulate search params
 
     const handleInputChange = (event) => {
         setInputValue(event.target.value);
@@ -19,32 +15,45 @@ function Navbar({ onAuthPage }) {
 
     const handleSearchSubmit = (event) => {
         event.preventDefault();
-        // Update URL search parameter instead of relying on prop
-        if (inputValue.trim()) {
-             setSearchParams({ search: inputValue }); // Set/update search param
+        const searchTerm = inputValue.trim();
+        const currentPath = window.location.pathname;
+
+        if (searchTerm) {
+            // Always update the search parameter
+            setSearchParams(prev => {
+                prev.set('search', searchTerm);
+                return prev;
+            }, { replace: true });
+            // If not already on the home page, navigate there
+            if (currentPath !== '/') {
+                navigate(`/?search=${encodeURIComponent(searchTerm)}`);
+            }
         } else {
-             setSearchParams({}); // Clear search param if input is empty
+            // Clear the search parameter
+            setSearchParams(prev => {
+                 prev.delete('search');
+                 return prev;
+            }, { replace: true });
+            // Navigate to home if clearing search from another page
+             if (currentPath !== '/') {
+                 navigate('/');
+             }
         }
-        // Clear input field after search? Optional.
-        // setInputValue('');
     };
 
     const handleLogoutClick = () => {
         logout();
-        setSearchParams({}); // Clear search on logout
         navigate('/');
     };
 
     return (
-        // Remove form wrapper if not needed or adjust onSubmit logic
-        <nav className="navbar"> {/* Changed back to nav from form */}
+        <nav className="navbar">
             <div className="navbar-brand">
-                <Link to="/" onClick={() => setSearchParams({})}>Memeflix</Link> {/* Clear search on brand click */}
+                <Link to="/">Memeflix</Link>
             </div>
 
-            {/* --- Conditionally Render Search Bar --- */}
-            {!onAuthPage && ( // Only show search if NOT on an auth page
-                 <form className="navbar-search" onSubmit={handleSearchSubmit}>
+            <div className="navbar-search">
+                <form onSubmit={handleSearchSubmit} style={{ display: 'flex' }}>
                     <input
                         type="text"
                         placeholder="Search memes..."
@@ -54,21 +63,19 @@ function Navbar({ onAuthPage }) {
                     />
                     <button type="submit">Search</button>
                 </form>
-            )}
-            {/* --- End Conditional Search Bar --- */}
-
+            </div>
 
             <div className="navbar-links">
                 {isAuthenticated ? (
                     <>
-                        <span className="navbar-username">Welcome, {user.username}!</span>
+                        <Link to="/my-list">My List</Link>
+                        <span className="navbar-username">Hi, {user.username}!</span>
                         <button type="button" onClick={handleLogoutClick} className="logout-button">Logout</button>
                     </>
                 ) : (
                     <>
-                        {/* Only show auth links if not on an auth page */}
-                        {!onAuthPage && <Link to="/login">Login</Link>}
-                        {!onAuthPage && <Link to="/register">Register</Link>}
+                        <Link to="/login">Login</Link>
+                        <Link to="/register">Register</Link>
                     </>
                 )}
             </div>

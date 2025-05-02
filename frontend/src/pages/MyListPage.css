@@ -1,0 +1,16 @@
+.my-list-page { padding: 30px 5%; }
+
+.my-list-page h1 {
+    color: var(--text-light); margin-bottom: 25px; font-size: 1.8em;
+    font-weight: 500; border-left: 4px solid var(--accent-red); padding-left: 10px;
+}
+
+.empty-list-message {
+    padding: 60px 20px; text-align: center; font-size: 1.3em;
+    color: var(--text-secondary); min-height: 200px; display: flex;
+    justify-content: center; align-items: center;
+}
+
+/* Ensure MemeGrid itself adapts within this page */
+.my-list-page .meme-grid-container { padding: 0; }
+.my-list-page .meme-grid-container h2 { display: none; }

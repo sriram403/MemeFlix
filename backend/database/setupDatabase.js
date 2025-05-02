@@ -1,9 +1,7 @@
 // backend/database/setupDatabase.js
-// You can copy-paste the whole file content below
-
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
-const bcrypt = require('bcrypt'); // Import bcrypt
+const bcrypt = require('bcrypt');
 
 const dbPath = path.resolve(__dirname, '../memeflix.db');
 
@@ -18,10 +16,10 @@ const db = new sqlite3.Database(dbPath, (err) => {
 });
 
 function createTables() {
-  db.serialize(async () => { // Make serialize callback async for bcrypt
+  db.serialize(async () => {
     console.log('Creating/updating tables if they do not exist...');
 
-    // Memes Table (ensure columns exist, might need manual ALTER if run before)
+    // Memes Table
     const createMemeTableSql = `
       CREATE TABLE IF NOT EXISTS memes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,7 +34,6 @@ function createTables() {
         uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `;
-    // Use a Promise to wait for table creation if needed
     await new Promise((resolve, reject) => {
         db.run(createMemeTableSql, (err) => {
           if (err) {
@@ -49,8 +46,7 @@ function createTables() {
         });
     });
 
-
-    // *** NEW: Users Table ***
+    // Users Table
     const createUserTableSql = `
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -72,46 +68,30 @@ function createTables() {
         });
      });
 
+    // *** NEW: User Favorites Table ***
+    const createUserFavoritesTableSql = `
+      CREATE TABLE IF NOT EXISTS user_favorites (
+          user_id INTEGER NOT NULL,
+          meme_id INTEGER NOT NULL,
+          added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+          FOREIGN KEY (meme_id) REFERENCES memes (id) ON DELETE CASCADE,
+          PRIMARY KEY (user_id, meme_id) -- Ensure unique combination
+      );
+    `;
+     await new Promise((resolve, reject) => {
+        db.run(createUserFavoritesTableSql, (err) => {
+            if (err) {
+                console.error('Error creating user_favorites table:', err.message);
+                reject(err);
+            } else {
+                console.log("Table 'user_favorites' created or already exists.");
+                resolve();
+            }
+        });
+     });
 
-    // *** Optional: Add a default admin user (example) ***
-    // const adminUsername = 'admin';
-    // const adminEmail = 'admin@example.com';
-    // const adminPassword = 'password123'; // CHANGE THIS IN A REAL APP
-    // const saltRounds = 10;
-
-    // // Check if admin exists
-    // db.get("SELECT id FROM users WHERE username = ?", [adminUsername], async (err, row) => {
-    //     if (err) {
-    //         console.error("Error checking for admin user:", err.message);
-    //     } else if (!row) {
-    //         // Admin doesn't exist, create one
-    //         console.log("Admin user not found, creating one...");
-    //         try {
-    //             const hashedPassword = await bcrypt.hash(adminPassword, saltRounds);
-    //             db.run("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
-    //                 [adminUsername, adminEmail, hashedPassword],
-    //                 (insertErr) => {
-    //                     if (insertErr) {
-    //                         console.error("Error creating admin user:", insertErr.message);
-    //                     } else {
-    //                         console.log("Default admin user created.");
-    //                     }
-    //                     closeDatabase(); // Close after attempting creation
-    //                 }
-    //             );
-    //         } catch (hashError) {
-    //             console.error("Error hashing admin password:", hashError);
-    //             closeDatabase(); // Close on hash error
-    //         }
-    //     } else {
-    //         // Admin exists, just close DB
-    //         console.log("Admin user already exists.");
-    //         closeDatabase();
-    //     }
-    // });
-     // If not adding admin user logic above, close DB here:
      closeDatabase();
-
   });
 }
 

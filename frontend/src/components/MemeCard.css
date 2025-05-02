@@ -1,111 +1,63 @@
-/* frontend/src/components/MemeCard.css */
-
 .meme-card {
-  /* Use card background variable */
   background-color: var(--card-bg);
   border-radius: 5px;
   overflow: hidden;
   margin: 10px;
-  /* Slightly enhanced base shadow */
   box-shadow: 0 5px 10px var(--shadow-color-light);
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  /* Ensure all relevant properties are transitioned */
   transition: transform 0.2s ease-in-out, box-shadow 0.3s ease-in-out, border-left-color 0.3s ease;
-  border-left: 3px solid transparent; /* Start with transparent border */
+  border-left: 3px solid transparent;
 }
 
 .meme-card:hover {
-  transform: scale(1.04); /* Slightly more pronounced scale */
-
-  /* 1. Enhanced Floating Shadow */
-  box-shadow: 0 15px 30px var(--shadow-color-heavy),
-
-              /* 2. Enhanced Red Glow */
-              0 0 20px 5px var(--accent-red-glow); /* Slightly larger/more intense glow */
-
-  /* Add Accent Border on hover */
+  transform: scale(1.04);
+  box-shadow: 0 15px 30px var(--shadow-color-heavy), 0 0 20px 5px var(--accent-red-glow);
   border-left-color: var(--accent-red);
 }
 
 .meme-card-media {
   width: 100%;
-  aspect-ratio: 2 / 1; /* Keep the shorter aspect ratio */
-  background-color: var(--primary-dark-bg); /* Darker placeholder */
+  aspect-ratio: 2 / 1;
+  background-color: var(--primary-dark-bg);
   display: flex;
   justify-content: center;
   align-items: center;
   overflow: hidden;
+  position: relative; /* Needed for fav button positioning */
 }
 
 .meme-card-media img,
 .meme-card-media video {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  display: block; width: 100%; height: 100%; object-fit: cover;
 }
 
 .meme-card-info {
   padding: 10px 12px;
-  /* Subtle Gradient for info section */
   background-image: linear-gradient(to bottom, #252525, var(--card-bg));
   min-height: 85px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  border-top: 1px solid var(--border-color); /* Add separator line */
+  border-top: 1px solid var(--border-color);
 }
 
 .meme-card-title {
-  color: var(--text-primary);
-  font-size: 0.9em;
-  font-weight: 500; /* Slightly bolder title */
-  margin: 0 0 8px 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  color: var(--text-primary); font-size: 0.9em; font-weight: 500;
+  margin: 0 0 8px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
-.meme-card-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: auto;
-}
+.meme-card-actions { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
 
 .vote-button {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 1.2em; /* Larger icons */
-  padding: 2px 5px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  transition: color 0.2s ease, transform 0.1s ease, text-shadow 0.2s ease; /* Added text-shadow */
+  background: none; border: none; color: var(--text-secondary); cursor: pointer;
+  font-size: 1.2em; padding: 2px 5px; display: flex; align-items: center; gap: 5px;
+  transition: color 0.2s ease, transform 0.1s ease, text-shadow 0.2s ease;
 }
-.vote-button:hover {
-  color: var(--text-light);
-  transform: scale(1.15); /* More pronounced hover scale */
-}
-.vote-button.upvote:hover {
-   text-shadow: 0 0 8px lightgreen; /* Greenish glow for upvote */
-}
-.vote-button.downvote:hover {
-    text-shadow: 0 0 8px lightcoral; /* Reddish glow for downvote */
-}
+.vote-button:hover { color: var(--text-light); transform: scale(1.15); }
+.vote-button.upvote:hover { text-shadow: 0 0 8px lightgreen; }
+.vote-button.downvote:hover { text-shadow: 0 0 8px lightcoral; }
 
-
-.vote-count {
-  font-size: 0.7em;
-  color: var(--text-secondary);
-}
-
-.score {
-  font-size: 0.85em;
-  color: var(--text-primary);
-  font-weight: bold;
-}
+.vote-count { font-size: 0.7em; color: var(--text-secondary); }
+.score { font-size: 0.85em; color: var(--text-primary); font-weight: bold; }

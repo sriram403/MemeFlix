@@ -1,94 +1,49 @@
-/* frontend/src/components/HeroBanner.css */
-
 .hero-banner {
-  position: relative;
-  height: 60vh; /* Slightly taller banner */
-  min-height: 450px;
-  background-size: cover;
-  background-position: center 30%; /* Position background slightly higher */
-  color: #fff;
-  display: flex;
-  align-items: center;
-  padding: 0 5%;
-  margin-bottom: 40px; /* More space below */
-  overflow: hidden; /* Hide potential overflow */
+  position: relative; height: 60vh; min-height: 450px; background-size: cover;
+  background-position: center 30%; color: #fff; display: flex; align-items: center;
+  padding: 0 5%; margin-bottom: 40px; overflow: hidden;
 }
 
-/* Add overlay for better text contrast regardless of background */
 .hero-banner::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    /* Darker gradient overlay */
-    background: linear-gradient(to right, rgba(0, 0, 0, 0.9) 20%, rgba(0, 0, 0, 0.1) 80%),
-                linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 20%); /* Fade from bottom */
+    content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(to right, rgba(0, 0, 0, 0.9) 20%, rgba(0, 0, 0, 0.1) 80%), linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 20%);
     z-index: 0;
 }
 
-
-.hero-content {
-  max-width: 45%; /* Adjust text width */
-  z-index: 1;
-  position: relative; /* Ensure content is above pseudo-element */
-}
+.hero-content { max-width: 45%; z-index: 1; position: relative; }
 
 .hero-title {
-  font-size: 3em; /* Larger title */
-  font-weight: 700; /* Bolder */
-  margin-bottom: 20px;
-  text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.8);
-  line-height: 1.1;
+  font-size: 3em; font-weight: 700; margin-bottom: 20px;
+  text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.8); line-height: 1.1;
 }
 
 .hero-description {
-  font-size: 1.2em;
-  margin-bottom: 30px;
-  line-height: 1.5;
-  max-width: 600px;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  font-size: 1.2em; margin-bottom: 30px; line-height: 1.5;
+  max-width: 600px; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
 }
 
-.hero-buttons {
-  display: flex;
-  gap: 15px;
-}
+.hero-buttons { display: flex; gap: 15px; align-items: center; /* Align fav button */ }
 
 .hero-button {
-  padding: 12px 30px; /* Larger buttons */
-  border: none;
-  border-radius: 4px;
-  font-size: 1.1em; /* Larger text */
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.3); /* Add shadow to buttons */
+  padding: 12px 30px; border: none; border-radius: 4px; font-size: 1.1em;
+  font-weight: bold; cursor: pointer; transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+  display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
-.hero-button:hover {
-    transform: scale(1.05); /* Button scale effect */
-    box-shadow: 0 6px 12px rgba(0,0,0,0.4);
-}
+.hero-button:hover { transform: scale(1.05); box-shadow: 0 6px 12px rgba(0,0,0,0.4); }
 
+.play-button { background-color: var(--text-light); color: var(--primary-dark-bg); }
+.play-button:hover { background-color: #dddddd; }
 
-.play-button {
-  background-color: var(--text-light);
-  color: var(--primary-dark-bg);
-}
-.play-button:hover {
-  background-color: #dddddd; /* Slightly off-white hover */
-}
+.info-button { background-color: rgba(109, 109, 110, 0.8); color: white; }
+.info-button:hover { background-color: rgba(109, 109, 110, 1); box-shadow: 0 0 10px rgba(150, 150, 150, 0.5); }
 
-.info-button {
-  background-color: rgba(109, 109, 110, 0.8); /* Slightly more opaque */
-  color: white;
-}
-.info-button:hover {
-   background-color: rgba(109, 109, 110, 1);
-   box-shadow: 0 0 10px rgba(150, 150, 150, 0.5); /* Subtle white glow */
-
+/* Specific style for favorite button in hero to align with others */
+.hero-fav-button {
+    /* Reuse base favorite-button styles but override size/position */
+    position: static; /* Override absolute positioning */
+    width: auto; height: auto; /* Let content size it */
+    padding: 10px; /* Adjust padding */
+    font-size: 1.5em; /* Match icon size maybe */
+    /* Add margin if needed */
+    /* margin-left: 10px; */
 }

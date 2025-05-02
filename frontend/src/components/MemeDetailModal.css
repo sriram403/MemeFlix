@@ -1,199 +1,74 @@
-/* frontend/src/components/MemeDetailModal.css */
-
 .modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.85); /* Slightly darker overlay */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  cursor: pointer;
-  /* --- Optional: Glassmorphism --- */
-  /* Requires browser support & can impact performance */
-  /* backdrop-filter: blur(8px); */
-  /* -webkit-backdrop-filter: blur(8px); */
-  /* --- End Optional --- */
-
-  /* Fade-in animation */
-  opacity: 0;
-  animation: fadeIn 0.3s ease forwards;
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.85); display: flex; justify-content: center;
+  align-items: center; z-index: 1000; cursor: pointer;
+  opacity: 0; animation: fadeIn 0.3s ease forwards;
 }
-
-.modal-actions {
-  display: flex;
-  justify-content: center; /* Center actions */
-  align-items: center;
-  gap: 25px; /* Space between elements */
-  margin-top: 25px; /* Space above actions */
-  padding-top: 15px; /* Space above actions */
-  border-top: 1px solid var(--border-color); /* Separator line */
-}
-
-.modal-actions .vote-button {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 1.5em; /* Larger icons in modal */
-  padding: 5px 10px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: color 0.2s ease, transform 0.1s ease, text-shadow 0.2s ease;
-}
-.modal-actions .vote-button:hover {
-  color: var(--text-light);
-  transform: scale(1.1);
-}
-.modal-actions .upvote:hover {
-   text-shadow: 0 0 10px lightgreen;
-}
-.modal-actions .downvote:hover {
-    text-shadow: 0 0 10px lightcoral;
-}
-
-
-.modal-actions .vote-count {
-  font-size: 0.7em;
-  color: var(--text-secondary);
-}
-
-.modal-actions .score {
-  font-size: 1em; /* Larger score in modal */
-  color: var(--text-light);
-  font-weight: bold;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .modal-content {
-  /* Subtle Gradient for modal */
   background-image: linear-gradient(145deg, #2a2a2a 0%, #1f1f1f 100%);
-  padding: 0;
-  border-radius: 8px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6); /* Stronger shadow */
-  position: relative;
-  max-width: 85%; /* Slightly smaller max-width */
-  height: 85vh; /* Slightly smaller max-height */
-  overflow: hidden;
-  cursor: default;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--border-color); /* Add subtle border */
-
-  /* Scale-up animation */
-  transform: scale(0.95);
-  animation: scaleUp 0.3s 0.1s ease forwards; /* Delay scale animation slightly */
+  padding: 0; border-radius: 8px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+  position: relative; max-width: 85%; height: 85vh; overflow: hidden;
+  cursor: default; display: flex; flex-direction: column;
+  border: 1px solid var(--border-color);
+  transform: scale(0.95); animation: scaleUp 0.3s 0.1s ease forwards;
 }
-
-@keyframes scaleUp {
-  from { transform: scale(0.95); }
-  to { transform: scale(1.0); }
-}
-
+@keyframes scaleUp { from { transform: scale(0.95); } to { transform: scale(1.0); } }
 
 .modal-close-button {
-  position: absolute;
-  top: 15px; /* Adjust position */
-  right: 15px;
-  background: rgba(0, 0, 0, 0.5); /* Darker background for button */
-  border: none;
-  border-radius: 50%; /* Circular button */
-  width: 30px;
-  height: 30px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 1.2em; /* Adjust 'X' size */
-  color: var(--text-secondary);
-  cursor: pointer;
-  line-height: 1;
-  padding: 0;
-  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
-  z-index: 10; /* Ensure button is above content */
+  position: absolute; top: 15px; right: 15px; background: rgba(0, 0, 0, 0.5);
+  border: none; border-radius: 50%; width: 30px; height: 30px; display: flex;
+  justify-content: center; align-items: center; font-size: 1.2em;
+  color: var(--text-secondary); cursor: pointer; line-height: 1; padding: 0;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease; z-index: 10;
 }
-
-.modal-close-button:hover {
-  background-color: rgba(0, 0, 0, 0.8);
-  color: var(--text-light);
-  transform: rotate(90deg); /* Rotate 'X' on hover */
-}
+.modal-close-button:hover { background-color: rgba(0, 0, 0, 0.8); color: var(--text-light); transform: rotate(90deg); }
 
 .modal-media {
-  width: 100%;
-  margin: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #000;
-  flex-shrink: 0;
-  position: relative;
-  max-height: 70%; /* Adjusted max-height */
-  border-bottom: 1px solid var(--border-color); /* Separator line */
+  width: 100%; margin: 0; display: flex; justify-content: center; align-items: center;
+  background-color: #000; flex-shrink: 0; position: relative; max-height: 70%;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-media img,
 .modal-media video {
-  display: block;
-  max-width: 100%;
-  max-height: 100%;
-  height: auto;
-  width: auto;
-  object-fit: contain;
+  display: block; max-width: 100%; max-height: 100%; height: auto; width: auto; object-fit: contain;
 }
 
-.modal-info {
-  padding: 20px 30px 25px 30px; /* Adjust padding */
-  flex-grow: 1;
-  overflow-y: auto; /* Scroll only this section */
-}
-
+.modal-info { padding: 20px 30px 25px 30px; flex-grow: 1; overflow-y: auto; }
 
 .modal-info h2 {
-  color: var(--text-light); /* Brighter title */
-  margin-top: 0;
-  margin-bottom: 15px;
-  text-align: left;
-  font-size: 1.5em; /* Larger title */
-  font-weight: 500;
+  color: var(--text-light); margin-top: 0; margin-bottom: 15px; text-align: left;
+  font-size: 1.5em; font-weight: 500;
 }
 
-.modal-description,
-.modal-tags {
-    color: var(--text-primary); /* Slightly brighter text */
-    font-size: 0.95em;
-    line-height: 1.5;
-    margin-top: 10px;
-    margin-bottom: 10px;
+.modal-description, .modal-tags {
+  color: var(--text-primary); font-size: 0.95em; line-height: 1.5; margin-top: 10px; margin-bottom: 10px;
+}
+.modal-tags { color: var(--text-secondary); font-style: italic; }
+
+.modal-actions {
+  display: flex; justify-content: center; align-items: center; gap: 25px;
+  margin-top: 25px; padding-top: 15px; border-top: 1px solid var(--border-color);
 }
 
-.modal-tags {
-    color: var(--text-secondary); /* Keep tags dimmer */
-    font-style: italic;
+.modal-actions .vote-button {
+  background: none; border: none; color: var(--text-secondary); cursor: pointer;
+  font-size: 1.5em; padding: 5px 10px; display: flex; align-items: center; gap: 6px;
+  transition: color 0.2s ease, transform 0.1s ease, text-shadow 0.2s ease;
 }
+.modal-actions .vote-button:hover { color: var(--text-light); transform: scale(1.1); }
+.modal-actions .upvote:hover { text-shadow: 0 0 10px lightgreen; }
+.modal-actions .downvote:hover { text-shadow: 0 0 10px lightcoral; }
 
-/* Custom Scrollbar (Optional, Webkit browsers) */
-.modal-info::-webkit-scrollbar {
-  width: 8px;
-}
-.modal-info::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 4px;
-}
-.modal-info::-webkit-scrollbar-thumb {
-  background-color: var(--accent-red);
-  border-radius: 4px;
-  border: 2px solid transparent;
-  background-clip: content-box;
-}
-.modal-info::-webkit-scrollbar-thumb:hover {
-  background-color: #f40612;
-}
+.modal-actions .vote-count { font-size: 0.7em; color: var(--text-secondary); }
+.modal-actions .score { font-size: 1em; color: var(--text-light); font-weight: bold; }
+
+.modal-info::-webkit-scrollbar { width: 8px; }
+.modal-info::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); border-radius: 4px; }
+.modal-info::-webkit-scrollbar-thumb { background-color: var(--accent-red); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
+.modal-info::-webkit-scrollbar-thumb:hover { background-color: #f40612; }
+
+/* Favorite button positioning in modal - already handled by inline style or default .favorite-button */
+/* Ensure .modal-media has position: relative */

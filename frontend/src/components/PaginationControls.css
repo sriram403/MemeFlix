@@ -1,43 +1,28 @@
-/* frontend/src/components/PaginationControls.css */
-
 .pagination-controls {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 25px 0 40px 0; /* Adjust padding */
-  gap: 20px; /* Increase gap */
+  display: flex; justify-content: center; align-items: center;
+  padding: 25px 0 40px 0; gap: 20px;
 }
 
 .pagination-controls button {
-  padding: 10px 20px; /* Larger buttons */
-  /* Subtle Gradient */
+  padding: 10px 20px;
   background-image: linear-gradient(to bottom, #3a3a3a, #2a2a2a);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
+  color: var(--text-primary); border: 1px solid var(--border-color);
+  border-radius: 4px; cursor: pointer; font-weight: 500;
   transition: background-image 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
 }
 
 .pagination-controls button:hover:not(:disabled) {
   background-image: linear-gradient(to bottom, #4a4a4a, #3a3a3a);
-  color: var(--text-light);
-  box-shadow: 0 0 10px 2px rgba(229, 9, 20, 0.4); /* Subtle red glow */
-  transform: translateY(-2px); /* Slight lift */
+  color: var(--text-light); box-shadow: 0 0 10px 2px rgba(229, 9, 20, 0.4);
+  transform: translateY(-2px);
 }
 
 .pagination-controls button:disabled {
-  background-image: linear-gradient(to bottom, #2f2f2f, #252525); /* Darker disabled gradient */
-  color: var(--text-secondary);
-  cursor: not-allowed;
-  border-color: #444;
-  box-shadow: none;
-  transform: none;
+  background-image: linear-gradient(to bottom, #2f2f2f, #252525);
+  color: var(--text-secondary); cursor: not-allowed; border-color: #444;
+  box-shadow: none; transform: none;
 }
 
 .pagination-controls .page-info {
-  color: var(--text-primary);
-  font-size: 1em; /* Slightly larger */
-  font-weight: 500;
+  color: var(--text-primary); font-size: 1em; font-weight: 500;
 }

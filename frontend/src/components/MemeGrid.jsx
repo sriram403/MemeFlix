@@ -1,10 +1,9 @@
-// frontend/src/components/MemeGrid.jsx
 import React from 'react';
 import './MemeGrid.css';
-import MemeCard from './MemeCard'; // Ensure MemeCard is imported
+import MemeCard from './MemeCard';
 
-// Receive onVote prop from App.jsx
-function MemeGrid({ memes, loading, error, onMemeClick, onVote }) {
+// Receive onFavoriteToggle prop
+function MemeGrid({ memes, loading, error, onMemeClick, onVote, onFavoriteToggle }) {
 
   if (loading) {
     return <div className="loading">Loading memes...</div>;
@@ -14,23 +13,28 @@ function MemeGrid({ memes, loading, error, onMemeClick, onVote }) {
     return <div className="error-message">Error: {error}</div>;
   }
 
+  // Handle empty state specifically AFTER loading and error checks
   if (!memes || memes.length === 0) {
-     return <div className="info-message">No memes found! Try a different search or check the backend.</div>;
+      // Don't show empty message if loading or error already handled it
+      if (!loading && !error) {
+         return <div className="info-message">No memes found matching your criteria.</div>;
+      }
+      return null; // Otherwise, let loading/error messages show
   }
+
 
   return (
     <div className="meme-grid-container">
-      {/* Maybe hide heading during search results? Optional */}
+      {/* Conditionally render heading? Maybe based on a prop */}
       {/* <h2>Browse Memes</h2> */}
        <div className="meme-grid">
-         {/* Map over the memes PROP */}
          {memes.map((meme) => (
-           // Pass onVote down to each MemeCard
            <MemeCard
              key={meme.id}
              meme={meme}
              onCardClick={onMemeClick}
-             onVote={onVote} // Pass the onVote handler
+             onVote={onVote}
+             onFavoriteToggle={onFavoriteToggle} // Pass toggle handler down
            />
          ))}
        </div>
