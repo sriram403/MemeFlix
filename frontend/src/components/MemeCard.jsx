@@ -1,3 +1,4 @@
+// frontend/src/components/MemeCard.jsx
 import React from 'react';
 import './MemeCard.css';
 import './FavoriteButton.css';
@@ -5,16 +6,18 @@ import { useAuth } from '../contexts/AuthContext';
 
 const MEDIA_BASE_URL = 'http://localhost:3001/media';
 
-function MemeCard({ meme, onCardClick, onVote, onFavoriteToggle }) {
+// Removed onVote prop as voting doesn't happen directly here anymore
+function MemeCard({ meme, onCardClick, onFavoriteToggle }) {
   const { isAuthenticated, isFavorite, loadingFavorites } = useAuth();
 
   if (!meme) return null;
 
+  // Calculate score (remains the same)
   const score = (meme.upvotes ?? 0) - (meme.downvotes ?? 0);
 
-  const handleUpvote = (event) => { event.stopPropagation(); if(onVote) onVote(meme.id, 'upvote'); };
-  const handleDownvote = (event) => { event.stopPropagation(); if(onVote) onVote(meme.id, 'downvote'); };
+  // REMOVED handleUpvote and handleDownvote handlers
 
+  // Favorite button handler remains the same
   const handleFavoriteButtonClick = (event) => {
       event.stopPropagation();
       if (isAuthenticated && !loadingFavorites && onFavoriteToggle) {
@@ -55,17 +58,18 @@ function MemeCard({ meme, onCardClick, onVote, onFavoriteToggle }) {
       </div>
       <div className="meme-card-info">
         <h3 className="meme-card-title">{meme.title || 'Untitled Meme'}</h3>
+        {/* --- UPDATED: Show Floompers Score Only --- */}
         <div className="meme-card-actions">
-           {/* --- UPDATE VOTE EMOJIS --- */}
-           <button className="vote-button upvote" onClick={handleUpvote} aria-label="Upvote">
-             😂 {/* New Emoji */} <span className="vote-count">{meme.upvotes ?? 0}</span>
-           </button>
-           <span className="score" aria-label={`Current score ${score}`}>Score: {score}</span>
-           <button className="vote-button downvote" onClick={handleDownvote} aria-label="Downvote">
-             😑 {/* New Emoji */} <span className="vote-count">{meme.downvotes ?? 0}</span>
-           </button>
-           {/* --- END EMOJI UPDATE --- */}
+           <span
+              className="score floompers-score" /* Added new class */
+              title="Meme Score" /* Tooltip on hover */
+              aria-label={`Floompers: ${score}`}
+            >
+                Floompers: {score}
+            </span>
+            {/* Vote buttons removed from here */}
         </div>
+        {/* --- END UPDATE --- */}
       </div>
     </div>
   );

@@ -18,26 +18,42 @@
 
 .meme-card-info {
   padding: 10px 12px; background-image: linear-gradient(to bottom, #252525, var(--card-bg));
-  min-height: 85px; display: flex; flex-direction: column; justify-content: space-between;
+  /* Adjust min-height as needed, likely less now */
+  min-height: 65px;
+  display: flex; flex-direction: column; justify-content: space-between;
   border-top: 1px solid var(--border-color);
 }
 .meme-card-title {
   color: var(--text-primary); font-size: 0.9em; font-weight: 500; margin: 0 0 8px 0;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.meme-card-actions { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
 
-.vote-button {
-  background: none; border: none; color: var(--text-secondary); cursor: pointer;
-  /* Adjust font-size if new emojis render differently */
-  font-size: 1.3em; /* Slightly larger perhaps */
-  padding: 2px 5px; display: flex; align-items: center; gap: 5px;
-  transition: color 0.2s ease, transform 0.1s ease, text-shadow 0.2s ease;
-  line-height: 1; /* Ensure good vertical alignment */
+/* Updated Actions Styling */
+.meme-card-actions {
+  display: flex;
+  justify-content: center; /* Center the single score item */
+  align-items: center;
+  margin-top: auto; /* Push to bottom */
 }
-.vote-button:hover { color: var(--text-light); transform: scale(1.15); }
-.vote-button.upvote:hover { text-shadow: 0 0 8px lightgreen; }
-.vote-button.downvote:hover { text-shadow: 0 0 8px lightcoral; }
 
-.vote-count { font-size: 0.7em; color: var(--text-secondary); }
-.score { font-size: 0.85em; color: var(--text-primary); font-weight: bold; }
+/* Remove specific .vote-button styles if they only applied here */
+/* Keep .score styles, add .floompers-score */
+.score.floompers-score {
+  font-size: 0.9em; /* Adjust size */
+  color: var(--text-secondary); /* Dimmer color for score */
+  font-weight: 500;
+  padding: 4px 0; /* Add slight padding */
+  cursor: help; /* Indicate tooltip presence */
+}
+.score.floompers-score:hover {
+    color: var(--text-primary); /* Brighten on hover */
+}
+
+/* REMOVE these if they only applied to MemeCard: */
+/*
+.vote-button { ... }
+.vote-button:hover { ... }
+.vote-button.upvote:hover { ... }
+.vote-button.downvote:hover { ... }
+.vote-count { ... }
+*/
