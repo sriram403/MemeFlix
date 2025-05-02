@@ -1,0 +1,26 @@
+/* frontend/src/pages/HistoryPage.css */
+.history-page {
+    padding: 30px 5%;
+}
+
+.history-page h1 {
+    color: var(--text-light); margin-bottom: 10px; font-size: 1.8em;
+    font-weight: 500; border-left: 4px solid var(--accent-red); padding-left: 10px;
+}
+
+.history-subtitle {
+    color: var(--text-secondary);
+    margin-bottom: 25px;
+    margin-left: 14px; /* Align with heading text */
+    font-size: 0.9em;
+}
+
+.empty-history-message {
+    padding: 60px 20px; text-align: center; font-size: 1.3em;
+    color: var(--text-secondary); min-height: 200px; display: flex;
+    justify-content: center; align-items: center;
+}
+
+/* Ensure MemeGrid adapts */
+.history-page .meme-grid-container { padding: 0; }
+.history-page .meme-grid-container h2 { display: none; }

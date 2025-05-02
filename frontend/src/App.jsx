@@ -1,3 +1,4 @@
+// frontend/src/App.jsx
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import './App.css';
@@ -6,6 +7,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import HomePage from './pages/HomePage';
 import MyListPage from './pages/MyListPage';
+import HistoryPage from './pages/HistoryPage'; // Import HistoryPage
 import { useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -32,7 +34,16 @@ function App() {
                             </ProtectedRoute>
                         }
                     />
-                    {/* Fallback Route Example */}
+                    {/* --- NEW: Protected Route for History --- */}
+                    <Route
+                        path="/history"
+                        element={
+                            <ProtectedRoute>
+                                <HistoryPage />
+                            </ProtectedRoute>
+                        }
+                    />
+                    {/* --- End History Route --- */}
                     <Route path="*" element={<div style={{ padding: '50px', textAlign: 'center' }}><h2>404 - Page Not Found</h2></div>} />
                 </Routes>
             </main>
