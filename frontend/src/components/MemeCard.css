@@ -1,59 +1,39 @@
+/* frontend/src/components/MemeCard.css */
 .meme-card {
-  background-color: var(--card-bg);
-  border-radius: 5px;
-  overflow: hidden;
-  margin: 10px;
-  box-shadow: 0 5px 10px var(--shadow-color-light);
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.2s ease-in-out, box-shadow 0.3s ease-in-out, border-left-color 0.3s ease;
+  background-color: var(--card-bg); border-radius: 5px; overflow: hidden; margin: 10px;
+  box-shadow: 0 5px 10px var(--shadow-color-light); cursor: pointer; display: flex;
+  flex-direction: column; transition: transform 0.2s ease-in-out, box-shadow 0.3s ease-in-out, border-left-color 0.3s ease;
   border-left: 3px solid transparent;
 }
-
 .meme-card:hover {
   transform: scale(1.04);
   box-shadow: 0 15px 30px var(--shadow-color-heavy), 0 0 20px 5px var(--accent-red-glow);
   border-left-color: var(--accent-red);
 }
-
 .meme-card-media {
-  width: 100%;
-  aspect-ratio: 2 / 1;
-  background-color: var(--primary-dark-bg);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
-  position: relative; /* Needed for fav button positioning */
+  width: 100%; aspect-ratio: 2 / 1; background-color: var(--primary-dark-bg); display: flex;
+  justify-content: center; align-items: center; overflow: hidden; position: relative;
 }
-
-.meme-card-media img,
-.meme-card-media video {
-  display: block; width: 100%; height: 100%; object-fit: cover;
-}
+.meme-card-media img, .meme-card-media video { display: block; width: 100%; height: 100%; object-fit: cover; }
 
 .meme-card-info {
-  padding: 10px 12px;
-  background-image: linear-gradient(to bottom, #252525, var(--card-bg));
-  min-height: 85px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  padding: 10px 12px; background-image: linear-gradient(to bottom, #252525, var(--card-bg));
+  min-height: 85px; display: flex; flex-direction: column; justify-content: space-between;
   border-top: 1px solid var(--border-color);
 }
-
 .meme-card-title {
-  color: var(--text-primary); font-size: 0.9em; font-weight: 500;
-  margin: 0 0 8px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: var(--text-primary); font-size: 0.9em; font-weight: 500; margin: 0 0 8px 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-
 .meme-card-actions { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
 
 .vote-button {
   background: none; border: none; color: var(--text-secondary); cursor: pointer;
-  font-size: 1.2em; padding: 2px 5px; display: flex; align-items: center; gap: 5px;
+  /* Adjust font-size if new emojis render differently */
+  font-size: 1.3em; /* Slightly larger perhaps */
+  padding: 2px 5px; display: flex; align-items: center; gap: 5px;
   transition: color 0.2s ease, transform 0.1s ease, text-shadow 0.2s ease;
+  line-height: 1; /* Ensure good vertical alignment */
 }
 .vote-button:hover { color: var(--text-light); transform: scale(1.15); }
 .vote-button.upvote:hover { text-shadow: 0 0 8px lightgreen; }

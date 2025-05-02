@@ -48,10 +48,7 @@ function MemeCard({ meme, onCardClick, onVote, onFavoriteToggle }) {
                 disabled={loadingFavorites}
                 aria-label={isCurrentlyFavorite ? "Remove from My List" : "Add to My List"}
             >
-                {/* --- USE DIFFERENT HEART EMOJIS --- */}
                 {isCurrentlyFavorite ? '❤️' : '♡'}
-                {/* You might need a specific font or SVG for consistent hollow heart ♡ */}
-                {/* --- END EMOJI CHANGE --- */}
             </button>
          )}
          {renderMedia()}
@@ -59,13 +56,15 @@ function MemeCard({ meme, onCardClick, onVote, onFavoriteToggle }) {
       <div className="meme-card-info">
         <h3 className="meme-card-title">{meme.title || 'Untitled Meme'}</h3>
         <div className="meme-card-actions">
+           {/* --- UPDATE VOTE EMOJIS --- */}
            <button className="vote-button upvote" onClick={handleUpvote} aria-label="Upvote">
-             👍 <span className="vote-count">{meme.upvotes ?? 0}</span>
+             😂 {/* New Emoji */} <span className="vote-count">{meme.upvotes ?? 0}</span>
            </button>
            <span className="score" aria-label={`Current score ${score}`}>Score: {score}</span>
            <button className="vote-button downvote" onClick={handleDownvote} aria-label="Downvote">
-             👎 <span className="vote-count">{meme.downvotes ?? 0}</span>
+             😑 {/* New Emoji */} <span className="vote-count">{meme.downvotes ?? 0}</span>
            </button>
+           {/* --- END EMOJI UPDATE --- */}
         </div>
       </div>
     </div>
