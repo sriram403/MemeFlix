@@ -36,7 +36,7 @@ function MemeDetailModal({ meme, onClose, onVote, onFavoriteToggle }) {
       }
   };
 
-  const score = (meme.upvotes ?? 0) - (meme.downvotes ?? 0); // Handle potential undefined
+  const score = (meme.upvotes ?? 0) - (meme.downvotes ?? 0);
   const isCurrentlyFavorite = isFavorite(meme.id);
 
   return (
@@ -51,10 +51,12 @@ function MemeDetailModal({ meme, onClose, onVote, onFavoriteToggle }) {
                     onClick={handleFavoriteButtonClick}
                     title={isCurrentlyFavorite ? "Remove from My List" : "Add to My List"}
                     disabled={loadingFavorites}
-                    style={{ top: '15px', right: '15px' }} // Keep inline style or move to CSS if preferred
+                    style={{ top: '15px', right: '15px' }}
                     aria-label={isCurrentlyFavorite ? "Remove from My List" : "Add to My List"}
                 >
-                    {isCurrentlyFavorite ? '✓' : '+'}
+                    {/* --- USE DIFFERENT HEART EMOJIS --- */}
+                    {isCurrentlyFavorite ? '❤️' : '♡'}
+                    {/* --- END EMOJI CHANGE --- */}
                 </button>
             )}
            {renderMedia()}

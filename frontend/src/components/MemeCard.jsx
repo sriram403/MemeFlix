@@ -8,19 +8,12 @@ const MEDIA_BASE_URL = 'http://localhost:3001/media';
 function MemeCard({ meme, onCardClick, onVote, onFavoriteToggle }) {
   const { isAuthenticated, isFavorite, loadingFavorites } = useAuth();
 
-  if (!meme) return null; // Handle case where meme data might be missing
+  if (!meme) return null;
 
-  const score = meme.upvotes - meme.downvotes;
+  const score = (meme.upvotes ?? 0) - (meme.downvotes ?? 0);
 
-  const handleUpvote = (event) => {
-    event.stopPropagation();
-    if(onVote) onVote(meme.id, 'upvote');
-  };
-
-  const handleDownvote = (event) => {
-    event.stopPropagation();
-    if(onVote) onVote(meme.id, 'downvote');
-  };
+  const handleUpvote = (event) => { event.stopPropagation(); if(onVote) onVote(meme.id, 'upvote'); };
+  const handleDownvote = (event) => { event.stopPropagation(); if(onVote) onVote(meme.id, 'downvote'); };
 
   const handleFavoriteButtonClick = (event) => {
       event.stopPropagation();
@@ -40,9 +33,7 @@ function MemeCard({ meme, onCardClick, onVote, onFavoriteToggle }) {
     }
   };
 
-  const handleCardClick = () => {
-    if (onCardClick) onCardClick(meme);
-  };
+  const handleCardClick = () => { if (onCardClick) onCardClick(meme); };
 
   const isCurrentlyFavorite = isFavorite(meme.id);
 
@@ -57,7 +48,10 @@ function MemeCard({ meme, onCardClick, onVote, onFavoriteToggle }) {
                 disabled={loadingFavorites}
                 aria-label={isCurrentlyFavorite ? "Remove from My List" : "Add to My List"}
             >
-                {isCurrentlyFavorite ? '✓' : '+'}
+                {/* --- USE DIFFERENT HEART EMOJIS --- */}
+                {isCurrentlyFavorite ? '❤️' : '♡'}
+                {/* You might need a specific font or SVG for consistent hollow heart ♡ */}
+                {/* --- END EMOJI CHANGE --- */}
             </button>
          )}
          {renderMedia()}

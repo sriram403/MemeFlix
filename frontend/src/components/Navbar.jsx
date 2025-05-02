@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import './Navbar.css';
+import './Navbar.css'; // Make sure CSS is imported
 
 function Navbar() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -19,22 +19,18 @@ function Navbar() {
         const currentPath = window.location.pathname;
 
         if (searchTerm) {
-            // Always update the search parameter
             setSearchParams(prev => {
                 prev.set('search', searchTerm);
                 return prev;
             }, { replace: true });
-            // If not already on the home page, navigate there
             if (currentPath !== '/') {
                 navigate(`/?search=${encodeURIComponent(searchTerm)}`);
             }
         } else {
-            // Clear the search parameter
             setSearchParams(prev => {
                  prev.delete('search');
                  return prev;
             }, { replace: true });
-            // Navigate to home if clearing search from another page
              if (currentPath !== '/') {
                  navigate('/');
              }
@@ -68,7 +64,18 @@ function Navbar() {
             <div className="navbar-links">
                 {isAuthenticated ? (
                     <>
-                        <Link to="/my-list">My List</Link>
+                        {/* --- Updated "My List" Link with Icon + Text --- */}
+                        <Link
+                            to="/my-list"
+                            className="navbar-my-list-link" /* New class for styling */
+                            title="My List"
+                            aria-label="My List"
+                        >
+                            <span className="my-list-icon">❤️</span> {/* Icon */}
+                            <span className="my-list-text">My List</span> {/* Text */}
+                        </Link>
+                        {/* --- End Update --- */}
+
                         <span className="navbar-username">Hi, {user.username}!</span>
                         <button type="button" onClick={handleLogoutClick} className="logout-button">Logout</button>
                     </>

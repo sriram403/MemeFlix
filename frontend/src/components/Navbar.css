@@ -1,3 +1,4 @@
+/* frontend/src/components/Navbar.css */
 .navbar {
   background-image: linear-gradient(to bottom, #1a1a1a, var(--primary-dark-bg));
   padding: 10px 5%;
@@ -34,9 +35,47 @@
 }
 .navbar-search button:hover { background-color: #f40612; box-shadow: 0 0 10px 2px var(--accent-red-glow); }
 
-.navbar-links { display: flex; align-items: center; gap: 20px; }
-.navbar-links a { color: var(--text-secondary); text-decoration: none; font-size: 1em; transition: color 0.2s ease, text-shadow 0.2s ease; }
-.navbar-links a:hover { color: var(--text-light); text-shadow: 0 0 8px rgba(255, 255, 255, 0.5); }
+.navbar-links { display: flex; align-items: center; gap: 25px; }
+
+/* Standard link style */
+.navbar-links a {
+  color: var(--text-secondary); text-decoration: none; font-size: 1em;
+  transition: color 0.2s ease, text-shadow 0.2s ease, transform 0.1s ease;
+  display: flex; /* Align icon and text if needed */
+  align-items: center;
+}
+.navbar-links a:hover {
+  color: var(--text-light);
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
+/* --- Styles for "My List" Link --- */
+.navbar-my-list-link {
+    /* Keep standard link styles */
+    gap: 6px; /* Space between icon and text */
+    padding: 5px 8px; /* Add some padding */
+    border-radius: 4px; /* Optional rounded background */
+}
+.navbar-my-list-link:hover {
+    /* Optional: Slight background on hover */
+    /* background-color: rgba(255, 255, 255, 0.1); */
+    text-shadow: none; /* Remove general text-shadow if interfering */
+    color: var(--text-light); /* Ensure text brightens */
+}
+.my-list-icon {
+    font-size: 1.2em; /* Adjust icon size */
+    line-height: 1;
+    color: var(--accent-red); /* Make icon always red for visibility */
+    transition: transform 0.2s ease;
+}
+.my-list-text {
+    font-size: 0.9em; /* Slightly smaller text */
+    font-weight: 500;
+}
+.navbar-my-list-link:hover .my-list-icon {
+    transform: scale(1.2); /* Animate icon on hover */
+}
+/* --- End My List Link Styles --- */
 
 .navbar-username { color: var(--text-primary); font-weight: 500; }
 
