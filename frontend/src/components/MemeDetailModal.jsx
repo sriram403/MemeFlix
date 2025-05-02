@@ -54,25 +54,23 @@ function MemeDetailModal({ meme, onClose }) {
   };
 
   return (
-    // The modal overlay (covers the whole screen)
-    // onClick={onClose} means clicking the background closes the modal
     <div className="modal-overlay" onClick={onClose}>
-      {/* The modal content area */}
-      {/* onClick={handleContentClick} stops clicks here from bubbling up to the overlay */}
       <div className="modal-content" onClick={handleContentClick}>
-        {/* Close button */}
-        <button className="modal-close-button" onClick={onClose}>
-          × {/* HTML entity for 'X' symbol */}
-        </button>
-        {/* Meme title */}
-        <h2>{meme.title}</h2>
-        {/* Render the larger media */}
+        <button className="modal-close-button" onClick={onClose}>×</button>
+
+        {/* Media container */}
         <div className="modal-media">
           {renderMedia()}
         </div>
-        {/* Optional: Add description or other details */}
-        <p>{meme.description}</p>
-        <p>Tags: {meme.tags}</p>
+
+        {/* --- NEW: Info container --- */}
+        <div className="modal-info">
+          <h2>{meme.title}</h2>
+          {/* Add description or other details */}
+          {meme.description && <p className="modal-description">{meme.description}</p>}
+          {meme.tags && <p className="modal-tags">Tags: {meme.tags}</p>}
+        </div>
+
       </div>
     </div>
   );

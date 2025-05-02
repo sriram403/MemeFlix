@@ -184,32 +184,34 @@ app.post('/api/memes/:id/downvote', (req, res) => {
 
 // *** NEW: GET endpoint to serve specific media files ***
 app.get('/media/:filename', (req, res) => {
-  // 1. Extract the filename from the URL parameter
   const filename = req.params.filename;
-
-  // 2. Construct the full path to the requested file
-  //    __dirname is the directory of server.js (backend)
-  //    '../meme_files' goes up one level and then into the meme_files directory
   const filePath = path.join(__dirname, '../meme_files', filename);
 
-  // 3. Send the file back to the client
-  //    'res.sendFile()' handles setting the correct Content-Type header
-  //    based on the file extension and streaming the file.
   res.sendFile(filePath, (err) => {
-    // Optional callback to handle errors during file sending
+    // Updated error handling
     if (err) {
-      // Log the error on the server side
+      // Log the error regardless
       console.error(`Error sending file ${filename}:`, err.message);
 
-      // Check if the error is because the file doesn't exist (ENOENT)
+      // Check if headers have *already* been sent or if response finished
+      if (res.headersSent || res.writableEnded) {
+         // If headers are sent or stream finished/aborted, we can't send a new response.
+         // The error is logged, just end the request cycle here if possible.
+         console.log(`Headers already sent for ${filename}, cannot send error response.`);
+         // Optionally try ending the response if it's still writable in some error states
+         // if (res.writable) res.end(); // Be cautious with this
+         return;
+      }
+
+      // If headers haven't been sent, we CAN send a proper error response
       if (err.code === "ENOENT") {
         res.status(404).json({ error: 'File not found.' });
       } else {
-        // For other errors (e.g., permissions), send a generic 500 error
+        // For other errors before sending started (e.g., permissions)
         res.status(500).json({ error: 'Failed to send file.' });
       }
     } else {
-      // Optional: Log successful file sending
+      // Optional: Log successful sending
       // console.log(`Sent file: ${filename}`);
     }
   });

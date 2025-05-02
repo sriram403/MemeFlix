@@ -9,7 +9,7 @@ import PaginationControls from './components/PaginationControls'; // Import Pagi
 import HeroBanner from './components/HeroBanner'; // Import HeroBanner
 
 const API_BASE_URL = 'http://localhost:3001'; // Backend URL
-const MEMES_PER_PAGE = 2; // Define items per page
+const MEMES_PER_PAGE = 10; // Define items per page
 
 function App() {
   // --- State Variables ---
