@@ -1,4 +1,3 @@
-// frontend/src/components/MemeCard.jsx
 import React from 'react';
 import './MemeCard.css';
 import './FavoriteButton.css';
@@ -6,18 +5,18 @@ import { useAuth } from '../contexts/AuthContext';
 
 const MEDIA_BASE_URL = 'http://localhost:3001/media';
 
-// Removed onVote prop as voting doesn't happen directly here anymore
+// onVote prop is REMOVED from here
 function MemeCard({ meme, onCardClick, onFavoriteToggle }) {
   const { isAuthenticated, isFavorite, loadingFavorites } = useAuth();
 
-  if (!meme) return null;
+  if (!meme) return null; // Return null if meme data is missing
 
-  // Calculate score (remains the same)
+  // Calculate score directly from the props. This will re-calculate on re-render.
   const score = (meme.upvotes ?? 0) - (meme.downvotes ?? 0);
 
-  // REMOVED handleUpvote and handleDownvote handlers
+  // Voting handlers are removed from this component
 
-  // Favorite button handler remains the same
+  // Favorite button handler
   const handleFavoriteButtonClick = (event) => {
       event.stopPropagation();
       if (isAuthenticated && !loadingFavorites && onFavoriteToggle) {
@@ -58,18 +57,16 @@ function MemeCard({ meme, onCardClick, onFavoriteToggle }) {
       </div>
       <div className="meme-card-info">
         <h3 className="meme-card-title">{meme.title || 'Untitled Meme'}</h3>
-        {/* --- UPDATED: Show Floompers Score Only --- */}
+        {/* Display Floompers score, calculated from props */}
         <div className="meme-card-actions">
            <span
-              className="score floompers-score" /* Added new class */
-              title="Meme Score" /* Tooltip on hover */
-              aria-label={`Floompers: ${score}`}
+              className="score floompers-score"
+              title="Meme Score"
+              aria-label={`Floompers score ${score}`}
             >
                 Floompers: {score}
             </span>
-            {/* Vote buttons removed from here */}
         </div>
-        {/* --- END UPDATE --- */}
       </div>
     </div>
   );

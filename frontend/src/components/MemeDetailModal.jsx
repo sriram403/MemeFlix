@@ -1,4 +1,3 @@
-// frontend/src/components/MemeDetailModal.jsx
 import React, { useEffect } from 'react';
 import './MemeDetailModal.css';
 import './FavoriteButton.css';
@@ -7,32 +6,29 @@ import { useAuth } from '../contexts/AuthContext';
 const MEDIA_BASE_URL = 'http://localhost:3001/media';
 
 function MemeDetailModal({ meme, onClose, onVote, onFavoriteToggle }) {
-  // Get recordView function from context
   const { isAuthenticated, isFavorite, loadingFavorites, recordView } = useAuth();
 
-  // Effect for Escape key (no change)
   useEffect(() => {
     const handleEsc = (event) => event.keyCode === 27 && onClose();
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
   }, [onClose]);
 
-  // --- NEW: Effect to record view when modal opens ---
   useEffect(() => {
-      if (meme && meme.id && isAuthenticated) {
-          // Record the view when the meme data is available and user is logged in
+      if (meme?.id && isAuthenticated) {
           recordView(meme.id);
       }
-  // Run ONLY when meme.id changes (i.e., when a new meme is loaded into the modal)
-  // Also depend on isAuthenticated and recordView function reference
   }, [meme?.id, isAuthenticated, recordView]);
-  // --- End Record View Effect ---
 
 
   if (!meme) return null;
 
-  // ... (renderMedia, handlers, score, isCurrentlyFavorite - NO CHANGES needed below) ...
-  const renderMedia = () => { /* ... same as before ... */
+  // Calculate score directly from the meme prop. Will update when prop changes.
+  const score = (meme.upvotes ?? 0) - (meme.downvotes ?? 0);
+  const isCurrentlyFavorite = isFavorite(meme.id);
+
+
+  const renderMedia = () => {
     const mediaUrl = `${MEDIA_BASE_URL}/${meme.filename}`;
     switch (meme.type) {
       case 'image': case 'gif': return <img src={mediaUrl} alt={meme.title} />;
@@ -40,6 +36,7 @@ function MemeDetailModal({ meme, onClose, onVote, onFavoriteToggle }) {
       default: return <p>Unsupported media type</p>;
     }
   };
+
   const handleContentClick = (event) => event.stopPropagation();
   const handleUpvote = (event) => { event.stopPropagation(); if(onVote) onVote(meme.id, 'upvote'); };
   const handleDownvote = (event) => { event.stopPropagation(); if(onVote) onVote(meme.id, 'downvote'); };
@@ -47,41 +44,47 @@ function MemeDetailModal({ meme, onClose, onVote, onFavoriteToggle }) {
       event.stopPropagation();
       if (isAuthenticated && !loadingFavorites && onFavoriteToggle) onFavoriteToggle(meme.id);
   };
-  const score = (meme.upvotes ?? 0) - (meme.downvotes ?? 0);
-  const isCurrentlyFavorite = isFavorite(meme.id);
 
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={handleContentClick}>
         <button className="modal-close-button" onClick={onClose} aria-label="Close modal">×</button>
-        <div className="modal-media">{renderMedia()}</div>
+
+        <div className="modal-media">
+             {isAuthenticated && (
+                <button
+                    className={`favorite-button modal-fav-button ${isCurrentlyFavorite ? 'is-favorite' : ''}`}
+                    onClick={handleFavoriteButtonClick}
+                    title={isCurrentlyFavorite ? "Remove from My List" : "Add to My List"}
+                    disabled={loadingFavorites}
+                    aria-label={isCurrentlyFavorite ? "Remove from My List" : "Add to My List"}
+                >
+                    {isCurrentlyFavorite ? '❤️' : '♡'}
+                </button>
+            )}
+           {renderMedia()}
+        </div>
+
         <div className="modal-info">
           <div className="modal-title-action-row">
               <h2>{meme.title || 'Untitled Meme'}</h2>
-              {isAuthenticated && (
-                  <button
-                      className={`favorite-button modal-fav-button ${isCurrentlyFavorite ? 'is-favorite' : ''}`}
-                      onClick={handleFavoriteButtonClick}
-                      title={isCurrentlyFavorite ? "Remove from My List" : "Add to My List"}
-                      disabled={loadingFavorites}
-                      aria-label={isCurrentlyFavorite ? "Remove from My List" : "Add to My List"}
-                  >
-                      {isCurrentlyFavorite ? '❤️' : '♡'}
-                  </button>
-              )}
+              {/* Favorite button moved here in previous step */}
           </div>
           {meme.description && <p className="modal-description">{meme.description}</p>}
           {meme.tags && <p className="modal-tags">Tags: {meme.tags}</p>}
+
           <div className="modal-actions">
              <button className="vote-button upvote" onClick={handleUpvote} aria-label="Upvote">
                😂 <span className="vote-count">{meme.upvotes ?? 0}</span>
              </button>
+             {/* Display calculated score */}
              <span className="score" aria-label={`Current score ${score}`}>Score: {score}</span>
              <button className="vote-button downvote" onClick={handleDownvote} aria-label="Downvote">
                😑 <span className="vote-count">{meme.downvotes ?? 0}</span>
              </button>
           </div>
+
         </div>
       </div>
     </div>

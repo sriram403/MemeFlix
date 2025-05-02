@@ -1,52 +1,41 @@
-// frontend/src/components/MemeRow.jsx
-import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth, axiosInstance } from '../contexts/AuthContext';
+import React from 'react';
 import MemeCard from './MemeCard';
 import './MemeRow.css';
 
-// Removed onVote prop
-function MemeRow({ title, tag, fetchUrl, onMemeClick, onFavoriteToggle }) {
-    const [memes, setMemes] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+// Props: title, memes (array), isLoading, onMemeClick, onVote, onFavoriteToggle
+function MemeRow({ title, memes, isLoading, onMemeClick, onVote, onFavoriteToggle }) {
 
-    const fetchRowMemes = useCallback(async () => {
-        let urlToFetch = '';
-        const params = { limit: 15 };
-        if (fetchUrl) { urlToFetch = fetchUrl; }
-        else if (tag) { urlToFetch = `/api/memes/tag/${encodeURIComponent(tag)}`; }
-        else { setLoading(false); setError(`No source for row "${title}".`); return; }
+    // No internal state or fetching needed anymore
 
-        setLoading(true); setError(null);
-        try {
-            const response = await axiosInstance.get(urlToFetch, { params });
-            setMemes(response.data.memes || response.data || []);
-        } catch (err) {
-            console.error(`Error fetching for row "${title}":`, err);
-            setError(`Could not load row.`); setMemes([]);
-        } finally { setLoading(false); }
-    }, [tag, fetchUrl, title, axiosInstance]);
+    // Render loading state if parent indicates
+    if (isLoading) {
+         return (
+             <div className="meme-row-container">
+                <h2 className="meme-row-title">{title}</h2>
+                <div className="loading-row">Loading...</div>
+            </div>
+         );
+    }
 
-    useEffect(() => { fetchRowMemes(); }, [fetchRowMemes]);
-
-    if (error || (!loading && memes.length === 0)) return null;
+    // Don't render if no memes provided (after loading)
+    if (!memes || memes.length === 0) {
+        return null;
+    }
 
     return (
         <div className="meme-row-container">
             <h2 className="meme-row-title">{title}</h2>
-            {loading ? ( <div className="loading-row">Loading...</div> ) : (
-                <div className="meme-row">
-                    {memes.map(meme => (
-                        <MemeCard
-                            key={meme.id}
-                            meme={meme}
-                            onCardClick={onMemeClick}
-                            // onVote prop removed here
-                            onFavoriteToggle={onFavoriteToggle}
-                        />
-                    ))}
-                </div>
-            )}
+            <div className="meme-row">
+                {memes.map(meme => (
+                    <MemeCard
+                        key={meme.id}
+                        meme={meme}
+                        onCardClick={onMemeClick}
+                        // onVote prop is REMOVED - voting handled via modal/search grid
+                        onFavoriteToggle={onFavoriteToggle}
+                    />
+                ))}
+            </div>
         </div>
     );
 }
