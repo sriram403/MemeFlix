@@ -1,36 +1,31 @@
+// frontend/src/components/MemeDetailModal.jsx
 import React, { useEffect } from 'react';
-import './MemeDetailModal.css'; // CSS for the modal
+// No longer needs axios here
+import './MemeDetailModal.css'; // Ensure CSS is imported
 
 const MEDIA_BASE_URL = 'http://localhost:3001/media';
+// API_BASE_URL removed
 
-// Props:
-// - meme: The meme object to display (contains filename, title, type, etc.)
-// - onClose: A function passed from App.jsx to call when the modal should close
-function MemeDetailModal({ meme, onClose }) {
+// Props: meme, onClose, onVote
+function MemeDetailModal({ meme, onClose, onVote }) {
 
-  // Effect to listen for Escape key press to close the modal
   useEffect(() => {
     const handleEsc = (event) => {
-      if (event.keyCode === 27) { // 27 is the keycode for Escape
-       onClose(); // Call the onClose function passed from App
+      if (event.keyCode === 27) {
+       onClose();
       }
     };
-    // Add event listener when the modal mounts
     window.addEventListener('keydown', handleEsc);
-
-    // Cleanup function: Remove event listener when the modal unmounts
     return () => {
       window.removeEventListener('keydown', handleEsc);
     };
-  }, [onClose]); // Re-run effect if onClose changes (though it likely won't)
+  }, [onClose]);
 
-
-  // If no meme is provided (e.g., modal is told to render but no meme selected), render nothing
   if (!meme) {
-    return null;
+    return null; // Render nothing if no meme is selected
   }
 
-  // Function to render the media (similar to MemeCard, but potentially larger/different controls)
+  // --- Media Rendering ---
   const renderMedia = () => {
     const mediaUrl = `${MEDIA_BASE_URL}/${meme.filename}`;
     switch (meme.type) {
@@ -42,35 +37,59 @@ function MemeDetailModal({ meme, onClose }) {
           <video controls autoPlay playsInline muted loop src={mediaUrl} title={meme.title}>
               Your browser does not support the video tag.
           </video>
-        ); // Added autoplay/loop/muted maybe for modal view
+        );
       default:
         return <p>Unsupported media type</p>;
     }
   };
 
-  // Prevent clicks inside the modal content from closing the modal
+  // Prevent clicks inside content from closing modal
   const handleContentClick = (event) => {
       event.stopPropagation();
   };
+
+  // --- Voting Handlers (call prop) ---
+   const handleUpvote = (event) => {
+    event.stopPropagation(); // Prevent clicks bubbling up
+    onVote(meme.id, 'upvote'); // Call handler from App
+  };
+
+  const handleDownvote = (event) => {
+    event.stopPropagation();
+    onVote(meme.id, 'downvote'); // Call handler from App
+  };
+
+  // Calculate score from the current meme prop
+  const score = meme.upvotes - meme.downvotes;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={handleContentClick}>
         <button className="modal-close-button" onClick={onClose}>×</button>
 
-        {/* Media container */}
         <div className="modal-media">
           {renderMedia()}
         </div>
 
-        {/* --- NEW: Info container --- */}
         <div className="modal-info">
           <h2>{meme.title}</h2>
-          {/* Add description or other details */}
           {meme.description && <p className="modal-description">{meme.description}</p>}
           {meme.tags && <p className="modal-tags">Tags: {meme.tags}</p>}
-        </div>
 
+          {/* --- Voting Section Added to Modal --- */}
+          <div className="modal-actions">
+            <button className="vote-button upvote" onClick={handleUpvote}>
+              👍 <span className="vote-count">{meme.upvotes}</span>
+            </button>
+            <span className="score">Score: {score}</span>
+            <button className="vote-button downvote" onClick={handleDownvote}>
+              👎 <span className="vote-count">{meme.downvotes}</span>
+            </button>
+             {/* Add other actions like sharing later? */}
+          </div>
+          {/* --- End Voting Section --- */}
+
+        </div>
       </div>
     </div>
   );
