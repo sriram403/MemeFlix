@@ -4,40 +4,43 @@ import { useAuth, axiosInstance } from '../contexts/AuthContext';
 import MemeCard from './MemeCard';
 import './MemeRow.css';
 
-// Props: title, fetchUrl (e.g., /api/memes?page=X&limit=Y), onMemeClick, onVote, onFavoriteToggle
-function MemeRow({ title, fetchUrl, onMemeClick, onVote, onFavoriteToggle }) {
+// Props: title, tag (e.g., 'funny'), onMemeClick, onVote, onFavoriteToggle
+function MemeRow({ title, tag, onMemeClick, onVote, onFavoriteToggle }) {
     const [memes, setMemes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    const fetchRowMemes = useCallback(async () => {
-        if (!fetchUrl) { // Don't fetch if no URL provided
+    // Fetch memes specifically by tag
+    const fetchMemesByTag = useCallback(async () => {
+        if (!tag) { // Don't fetch if no tag provided
             setLoading(false);
-            setError("No data source provided for row.");
+            setError("No tag provided for row.");
             return;
         }
         setLoading(true);
         setError(null);
         try {
-            const response = await axiosInstance.get(fetchUrl);
-            // Assuming response data structure is { memes: [...] }
-            // It could be directly an array, adjust if needed based on API
-            setMemes(response.data.memes || response.data || []); // Handle direct array or object
+            // Use the tag-specific API endpoint
+            const response = await axiosInstance.get(`/api/memes/tag/${encodeURIComponent(tag)}`, {
+                params: { limit: 15 } // Fetch limit for row display
+            });
+            // Expecting { memes: [...] } structure from backend
+            setMemes(response.data.memes || []);
         } catch (err) {
-            console.error(`Error fetching memes for row "${title}" (${fetchUrl}):`, err);
+            console.error(`Error fetching memes for tag "${tag}":`, err);
             setError(`Could not load row for "${title}"`);
             setMemes([]);
         } finally {
             setLoading(false);
         }
-    }, [fetchUrl, title, axiosInstance]); // Depend on the URL
+    }, [tag, title, axiosInstance]); // Depend on the tag
 
     useEffect(() => {
-        fetchRowMemes();
-    }, [fetchRowMemes]);
+        fetchMemesByTag();
+    }, [fetchMemesByTag]);
 
     // Don't render row if error or empty after loading
-    if (error) return null; // Optionally show row error state
+    if (error) return null;
     if (!loading && memes.length === 0) return null;
 
     return (
