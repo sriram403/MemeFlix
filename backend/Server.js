@@ -1,30 +1,136 @@
 // 1. Import libraries
+require('dotenv').config(); // Load .env variables
 const express = require('express');
 const cors = require('cors');
-const sqlite3 = require('sqlite3').verbose(); // Import sqlite3
-const path = require('path'); // Import path
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
+const bcrypt = require('bcrypt'); // For password hashing
+const jwt = require('jsonwebtoken'); // For JWT
 
 // 2. Define constants
 const app = express();
 const PORT = 3001;
-// Define path to the database file (relative to server.js location)
 const dbPath = path.resolve(__dirname, 'memeflix.db');
+const JWT_SECRET = process.env.JWT_SECRET; // Get secret from .env
+const SALT_ROUNDS = 10; // Cost factor for bcrypt hashing
 
 // 3. Connect to SQLite Database
 //    We open the connection here, and it stays open while the server runs.
 const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Error opening database:', err.message);
-  } else {
-    console.log(`Connected to the SQLite database at ${dbPath}`);
-    // We could potentially run setup checks here if needed, but our setup script handles creation.
-  }
+  if (err) { console.error('Error opening database:', err.message); }
+  else { console.log(`Connected to the SQLite database at ${dbPath}`); }
 });
 
 // 4. Apply Middleware
 app.use(cors());
 // Optional: Middleware to parse JSON request bodies (useful for POST/PUT later)
 app.use(express.json());
+
+// --- NEW: Authentication Middleware ---
+const authenticateToken = (req, res, next) => {
+  // Get token from the Authorization header (Bearer TOKEN)
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (token == null) return res.sendStatus(401); // No token, unauthorized
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+        console.error("JWT Verification Error:", err.message);
+        return res.sendStatus(403); // Invalid token, forbidden
+    }
+    // If token is valid, attach payload (user info) to request object
+    req.user = user;
+    next(); // Proceed to the next middleware or route handler
+  });
+};
+
+app.post('/api/auth/register', async (req, res) => {
+  const { username, email, password } = req.body;
+
+  if (!username || !email || !password) {
+    return res.status(400).json({ error: 'Username, email, and password are required.' });
+  }
+
+  try {
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+
+    // Insert user into database
+    const sql = "INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)";
+    db.run(sql, [username, email, hashedPassword], function(err) {
+      if (err) {
+        // Handle potential UNIQUE constraint errors (username/email already exists)
+        if (err.message.includes('UNIQUE constraint failed')) {
+          return res.status(409).json({ error: 'Username or email already exists.' }); // 409 Conflict
+        }
+        console.error("Database error during registration:", err.message);
+        return res.status(500).json({ error: 'Database error during registration.' });
+      }
+      // Return success (maybe user ID? or just success)
+      res.status(201).json({ message: 'User registered successfully.', userId: this.lastID });
+    });
+  } catch (error) {
+    console.error("Error during registration:", error);
+    res.status(500).json({ error: 'Server error during registration.' });
+  }
+});
+
+app.post('/api/auth/login', (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and password are required.' });
+  }
+
+  const sql = "SELECT * FROM users WHERE username = ?";
+  db.get(sql, [username], async (err, user) => {
+    if (err) {
+      console.error("Database error during login:", err.message);
+      return res.status(500).json({ error: 'Database error during login.' });
+    }
+    if (!user) {
+      // User not found
+      return res.status(401).json({ error: 'Invalid credentials.' }); // Unauthorized
+    }
+
+    try {
+      // Compare provided password with the stored hash
+      const match = await bcrypt.compare(password, user.password_hash);
+
+      if (match) {
+        // Passwords match - Generate JWT
+        // Payload should contain non-sensitive user info
+        const userPayload = { id: user.id, username: user.username };
+        const accessToken = jwt.sign(userPayload, JWT_SECRET, { expiresIn: '1h' }); // Token expires in 1 hour
+
+        res.json({ accessToken: accessToken, user: userPayload });
+      } else {
+        // Passwords don't match
+        res.status(401).json({ error: 'Invalid credentials.' }); // Unauthorized
+      }
+    } catch (error) {
+      console.error("Error comparing passwords:", error);
+      res.status(500).json({ error: 'Server error during login.' });
+    }
+  });
+});
+
+app.get('/api/auth/me', authenticateToken, (req, res) => {
+  // If middleware passes, req.user contains the payload from the token
+  // Fetch full user details if needed, but avoid sending hash
+   const sql = "SELECT id, username, email, created_at FROM users WHERE id = ?";
+   db.get(sql, [req.user.id], (err, userRow) => {
+       if (err) {
+            console.error("Error fetching user details for /me:", err.message);
+            return res.status(500).json({ error: 'Database error' });
+       }
+       if (!userRow) {
+           return res.status(404).json({ error: 'User not found' }); // Should not happen if token is valid
+       }
+       res.json(userRow);
+   });
+});
 
 // --- API Routes Will Go Here ---
 // GET endpoint to fetch all memes

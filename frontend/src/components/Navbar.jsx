@@ -1,44 +1,74 @@
 // frontend/src/components/Navbar.jsx
-import React, { useState } from 'react'; // Import useState for local input state
+// You can copy-paste the whole file content below
+
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom'; // Import Link and useNavigate
+import { useAuth } from '../contexts/AuthContext'; // Import useAuth
 import './Navbar.css';
 
-// Receive onSearch prop from App.jsx
-function Navbar({ onSearch }) {
-  // Local state to hold the value currently typed into the input field
-  const [inputValue, setInputValue] = useState('');
+// Removed onSearch prop for now, handle locally or via context if needed later
+function Navbar({ onSearch /* Remove if search logic changes */ }) {
+    const [inputValue, setInputValue] = useState('');
+    const { user, logout, isAuthenticated } = useAuth(); // Get auth state and logout function
+    const navigate = useNavigate(); // Hook for navigation
 
-  // Handler for when the input value changes
-  const handleInputChange = (event) => {
-    setInputValue(event.target.value);
-  };
+    const handleInputChange = (event) => {
+        setInputValue(event.target.value);
+    };
 
-  // Handler for when the search form (or button) is submitted
-  const handleSearchSubmit = (event) => {
-    event.preventDefault(); // Prevent default form submission (page reload)
-    onSearch(inputValue);   // Call the onSearch prop passed from App.jsx
-  };
+    const handleSearchSubmit = (event) => {
+        event.preventDefault();
+        // If onSearch prop exists, call it
+        if (onSearch) {
+           onSearch(inputValue);
+        } else {
+            // Basic search redirect (can be improved)
+            if (inputValue.trim()) {
+                navigate(`/?search=${encodeURIComponent(inputValue)}`); // Example search via query param
+            }
+        }
+    };
 
-  return (
-    // Use a form element for better accessibility and handling Enter key
-    <form className="navbar" onSubmit={handleSearchSubmit}>
-      <div className="navbar-brand">Memeflix</div>
-      <div className="navbar-links">
-        <a href="#">Home</a>
-        <a href="#">Trending</a>
-      </div>
-      {/* Search section now part of the form */}
-      <div className="navbar-search">
-        <input
-          type="text"
-          placeholder="Search memes..."
-          value={inputValue} // Control the input value with state
-          onChange={handleInputChange} // Update state on change
-        />
-        {/* Add a search button */}
-        <button type="submit">Search</button>
-      </div>
-    </form>
-  );
+    const handleLogoutClick = () => {
+        logout();
+        navigate('/'); // Redirect to home after logout
+    };
+
+    return (
+        <form className="navbar" onSubmit={handleSearchSubmit}>
+            <div className="navbar-brand">
+                <Link to="/">Memeflix</Link> {/* Link brand to home */}
+            </div>
+
+            {/* Search remains */}
+            <div className="navbar-search">
+                <input
+                    type="text"
+                    placeholder="Search memes..."
+                    value={inputValue}
+                    onChange={handleInputChange}
+                />
+                <button type="submit">Search</button>
+            </div>
+
+            {/* Conditional Auth Links */}
+            <div className="navbar-links">
+                {isAuthenticated ? (
+                    <>
+                        {/* Optional: Link to a user profile page */}
+                        {/* <Link to="/profile">{user.username}</Link> */}
+                        <span className="navbar-username">Welcome, {user.username}!</span>
+                        <button type="button" onClick={handleLogoutClick} className="logout-button">Logout</button>
+                    </>
+                ) : (
+                    <>
+                        <Link to="/login">Login</Link>
+                        <Link to="/register">Register</Link>
+                    </>
+                )}
+            </div>
+        </form>
+    );
 }
 
 export default Navbar;

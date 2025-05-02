@@ -1,49 +1,40 @@
 /* frontend/src/components/Navbar.css */
+/* Add styles for username and logout button */
+/* You can copy-paste the whole file content below */
 
 .navbar {
-  /* Subtle gradient for navbar */
   background-image: linear-gradient(to bottom, #1a1a1a, var(--primary-dark-bg));
-  padding: 10px 5%; /* Use percentage padding for responsiveness */
+  padding: 10px 5%;
   color: var(--text-primary);
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid var(--border-color);
-  position: sticky; /* Make navbar sticky */
+  position: sticky;
   top: 0;
-  z-index: 900; /* Ensure it's above content but below modal */
-  /* Add subtle shadow to differentiate when scrolling */
+  z-index: 900;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
-.navbar-brand {
+.navbar-brand a {
   font-size: 1.6em;
   font-weight: bold;
   color: var(--accent-red);
-  text-shadow: 0 0 5px var(--accent-red-glow); /* Add subtle glow to brand */
-}
-
-.navbar-links a {
-  color: var(--text-secondary);
-  text-decoration: none;
-  margin-left: 20px; /* Increased spacing */
-  font-size: 1em; /* Slightly larger */
-  transition: color 0.2s ease, text-shadow 0.2s ease; /* Added text-shadow transition */
-}
-
-.navbar-links a:hover {
-  color: var(--text-light);
-  text-shadow: 0 0 8px rgba(255, 255, 255, 0.5); /* Subtle white glow on hover */
+  text-shadow: 0 0 5px var(--accent-red-glow);
+  text-decoration: none; /* Remove underline from brand link */
 }
 
 .navbar-search {
+  /* Push search to the middle? Or keep it left? Let's adjust flex */
+  /* flex-grow: 1; /* Allow search to take space if needed */
+  /* margin: 0 20px; /* Add margins around search */
   display: flex;
   align-items: center;
 }
 
 .navbar-search input {
-  padding: 8px 12px; /* Slightly larger padding */
-  background-color: rgba(0, 0, 0, 0.5); /* More transparent background */
+  padding: 8px 12px;
+  background-color: rgba(0, 0, 0, 0.5);
   border: 1px solid var(--border-color);
   color: var(--text-light);
   border-radius: 3px;
@@ -55,10 +46,7 @@
    box-shadow: 0 0 8px var(--accent-red-glow);
    outline: none;
 }
-
-.navbar-search input::placeholder {
-  color: var(--text-secondary);
-}
+.navbar-search input::placeholder { color: var(--text-secondary); }
 
 .navbar-search button {
   padding: 8px 15px;
@@ -68,11 +56,53 @@
   border-radius: 3px;
   cursor: pointer;
   font-size: 0.9em;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease; /* Added box-shadow transition */
-  box-shadow: 0 0 0px transparent; /* Start with no shadow */
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 0 0px transparent;
+}
+.navbar-search button:hover {
+  background-color: #f40612;
+  box-shadow: 0 0 10px 2px var(--accent-red-glow);
 }
 
-.navbar-search button:hover {
-  background-color: #f40612; /* Slightly brighter red */
-  box-shadow: 0 0 10px 2px var(--accent-red-glow); /* Add glow on hover */
+.navbar-links {
+    display: flex;
+    align-items: center;
+    gap: 20px; /* Use gap for spacing */
+}
+
+.navbar-links a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  /* margin-left removed, using gap */
+  font-size: 1em;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+
+.navbar-links a:hover {
+  color: var(--text-light);
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
+/* Styles for logged-in state */
+.navbar-username {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.logout-button {
+    background: none;
+    border: 1px solid var(--text-secondary);
+    color: var(--text-secondary);
+    padding: 6px 12px;
+    font-size: 0.9em;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.logout-button:hover {
+    background-color: var(--secondary-dark-bg);
+    color: var(--text-light);
+    border-color: var(--text-light);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
 }

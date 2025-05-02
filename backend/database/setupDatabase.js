@@ -1,32 +1,27 @@
-// 1. Import the sqlite3 library
-//    'verbose()' provides more detailed stack traces for debugging errors.
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path'); // Node.js built-in module for working with file paths
+// backend/database/setupDatabase.js
+// You can copy-paste the whole file content below
 
-// 2. Define the path to the database file
-//    'path.resolve()' creates an absolute path.
-//    '__dirname' is the directory where this script (setupDatabase.js) is located.
-//    '../' goes up one level (to the 'backend' directory).
-//    'memeflix.db' is the name of our database file.
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
+const bcrypt = require('bcrypt'); // Import bcrypt
+
 const dbPath = path.resolve(__dirname, '../memeflix.db');
 
-// 3. Create or open the database connection
-//    If 'memeflix.db' doesn't exist, it will be created.
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
-    // Cannot open database
     console.error('Error opening database:', err.message);
-    throw err; // Stop the script if we can't open the DB
+    throw err;
   } else {
     console.log(`Connected to the SQLite database at ${dbPath}`);
-    createTables(); // Call the function to create tables if connection is successful
+    createTables();
   }
 });
 
-// 4. Function to define and create tables
 function createTables() {
-  db.serialize(() => {
-    console.log('Creating tables if they do not exist...');
+  db.serialize(async () => { // Make serialize callback async for bcrypt
+    console.log('Creating/updating tables if they do not exist...');
+
+    // Memes Table (ensure columns exist, might need manual ALTER if run before)
     const createMemeTableSql = `
       CREATE TABLE IF NOT EXISTS memes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,20 +31,90 @@ function createTables() {
         type TEXT CHECK(type IN ('image', 'gif', 'video')) NOT NULL,
         tags TEXT,
         filepath TEXT NOT NULL,
-        upvotes INTEGER DEFAULT 0 NOT NULL,  -- NEW: Upvote count
-        downvotes INTEGER DEFAULT 0 NOT NULL, -- NEW: Downvote count
+        upvotes INTEGER DEFAULT 0 NOT NULL,
+        downvotes INTEGER DEFAULT 0 NOT NULL,
         uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `;
-    db.run(createMemeTableSql, (err) => {
-      if (err) { /* ... error handling ... */ }
-      else { console.log("Table 'memes' updated or already exists."); }
-      closeDatabase(); // Ensure close is called after the operation
+    // Use a Promise to wait for table creation if needed
+    await new Promise((resolve, reject) => {
+        db.run(createMemeTableSql, (err) => {
+          if (err) {
+              console.error('Error creating/checking memes table:', err.message);
+              reject(err);
+          } else {
+              console.log("Table 'memes' checked/created.");
+              resolve();
+          }
+        });
     });
+
+
+    // *** NEW: Users Table ***
+    const createUserTableSql = `
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+     await new Promise((resolve, reject) => {
+        db.run(createUserTableSql, (err) => {
+            if (err) {
+                console.error('Error creating users table:', err.message);
+                reject(err);
+            } else {
+                console.log("Table 'users' created or already exists.");
+                resolve();
+            }
+        });
+     });
+
+
+    // *** Optional: Add a default admin user (example) ***
+    // const adminUsername = 'admin';
+    // const adminEmail = 'admin@example.com';
+    // const adminPassword = 'password123'; // CHANGE THIS IN A REAL APP
+    // const saltRounds = 10;
+
+    // // Check if admin exists
+    // db.get("SELECT id FROM users WHERE username = ?", [adminUsername], async (err, row) => {
+    //     if (err) {
+    //         console.error("Error checking for admin user:", err.message);
+    //     } else if (!row) {
+    //         // Admin doesn't exist, create one
+    //         console.log("Admin user not found, creating one...");
+    //         try {
+    //             const hashedPassword = await bcrypt.hash(adminPassword, saltRounds);
+    //             db.run("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)",
+    //                 [adminUsername, adminEmail, hashedPassword],
+    //                 (insertErr) => {
+    //                     if (insertErr) {
+    //                         console.error("Error creating admin user:", insertErr.message);
+    //                     } else {
+    //                         console.log("Default admin user created.");
+    //                     }
+    //                     closeDatabase(); // Close after attempting creation
+    //                 }
+    //             );
+    //         } catch (hashError) {
+    //             console.error("Error hashing admin password:", hashError);
+    //             closeDatabase(); // Close on hash error
+    //         }
+    //     } else {
+    //         // Admin exists, just close DB
+    //         console.log("Admin user already exists.");
+    //         closeDatabase();
+    //     }
+    // });
+     // If not adding admin user logic above, close DB here:
+     closeDatabase();
+
   });
 }
 
-// Function to close the database connection
 function closeDatabase() {
   db.close((err) => {
     if (err) {

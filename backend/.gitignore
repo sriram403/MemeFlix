@@ -1,6 +1,8 @@
 # Node modules
 **/node_modules/
-
+node_modules/
+memeflix.db
+.env
 # Database file
 **/memeflix.db
 
