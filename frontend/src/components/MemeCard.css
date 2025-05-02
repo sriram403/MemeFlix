@@ -1,109 +1,111 @@
 /* frontend/src/components/MemeCard.css */
 
 .meme-card {
-    background-color: #2a2a2a; /* Slightly lighter than main background */
-    border-radius: 5px;
-    overflow: hidden; /* Hide anything that might stick out (e.g., image corners before loading) */
-    margin: 10px;     /* Add space around each card */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Subtle shadow */
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Smooth hover effect */
-    cursor: pointer; /* Indicate it's clickable (though it does nothing yet) */
-    display: flex; /* Use flexbox for internal layout */
-    flex-direction: column; /* Stack media and info vertically */
-  }
-  
-  .meme-card-info {
-    padding: 10px 12px;
-    background-color: #1f1f1f;
-    /* Adjust min-height if needed to accommodate votes */
-    min-height: 85px; /* Increased min-height */
-    display: flex; /* Use flexbox */
-    flex-direction: column; /* Stack title and actions vertically */
-    justify-content: space-between; /* Push title up, actions down */
-  }
+  /* Use card background variable */
+  background-color: var(--card-bg);
+  border-radius: 5px;
+  overflow: hidden;
+  margin: 10px;
+  /* Slightly enhanced base shadow */
+  box-shadow: 0 5px 10px var(--shadow-color-light);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  /* Ensure all relevant properties are transitioned */
+  transition: transform 0.2s ease-in-out, box-shadow 0.3s ease-in-out, border-left-color 0.3s ease;
+  border-left: 3px solid transparent; /* Start with transparent border */
+}
 
-  .meme-card:hover {
-    transform: scale(1.03); /* Slightly enlarge card on hover */
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5); /* Increase shadow on hover */
-  }
-  
-  .meme-card-actions {
-    display: flex;
-    justify-content: space-between; /* Space out buttons/score */
-    align-items: center;
-    margin-top: auto; /* Push actions to the bottom if title is short */
-  }
+.meme-card:hover {
+  transform: scale(1.04); /* Slightly more pronounced scale */
 
-  .meme-card-media {
-    width: 100%;
-    /* Change the aspect ratio here */
-    /* From: aspect-ratio: 16 / 9; */
-    /* To a wider ratio (e.g., 2:1) */
-    aspect-ratio: 2 / 1; /* Height will be 50% of the width */
-    /* Or try even wider if needed: */
-    /* aspect-ratio: 2.5 / 1; */
-    /* aspect-ratio: 3 / 1; */
-  
-    background-color: #141414;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden; /* Add overflow hidden here too to help contain 'cover' */
-  }
-  
-  .meme-card-media img,
-  .meme-card-media video {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover; /* This will crop more vertically now */
-  }
-  
-/* Optional: Adjust min-height of info section if needed */
+  /* 1. Enhanced Floating Shadow */
+  box-shadow: 0 15px 30px var(--shadow-color-heavy),
+
+              /* 2. Enhanced Red Glow */
+              0 0 20px 5px var(--accent-red-glow); /* Slightly larger/more intense glow */
+
+  /* Add Accent Border on hover */
+  border-left-color: var(--accent-red);
+}
+
+.meme-card-media {
+  width: 100%;
+  aspect-ratio: 2 / 1; /* Keep the shorter aspect ratio */
+  background-color: var(--primary-dark-bg); /* Darker placeholder */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.meme-card-media img,
+.meme-card-media video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .meme-card-info {
-  padding: 8px 10px; /* Maybe slightly less padding */
-  background-color: #1f1f1f;
-  min-height: 45px; /* Adjust if title looks too cramped */
+  padding: 10px 12px;
+  /* Subtle Gradient for info section */
+  background-image: linear-gradient(to bottom, #252525, var(--card-bg));
+  min-height: 85px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-top: 1px solid var(--border-color); /* Add separator line */
 }
 
 .meme-card-title {
-   /* Styles likely okay, but check appearance */
-   color: #e5e5e5;
-   font-size: 0.85em; /* Maybe slightly smaller font */
-   margin: 0 0 4px 0;
-   white-space: nowrap;
-   overflow: hidden;
-   text-overflow: ellipsis;
-   margin-bottom: 8px; /* Add some space below title */
+  color: var(--text-primary);
+  font-size: 0.9em;
+  font-weight: 500; /* Slightly bolder title */
+  margin: 0 0 8px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
+.meme-card-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+}
+
 .vote-button {
   background: none;
   border: none;
-  color: #aaa;
+  color: var(--text-secondary);
   cursor: pointer;
-  font-size: 1.1em; /* Slightly larger emoji */
+  font-size: 1.2em; /* Larger icons */
   padding: 2px 5px;
   display: flex;
   align-items: center;
-  gap: 4px; /* Space between emoji and count */
-  transition: color 0.2s ease, transform 0.1s ease;
+  gap: 5px;
+  transition: color 0.2s ease, transform 0.1s ease, text-shadow 0.2s ease; /* Added text-shadow */
 }
- .vote-button:hover {
-    color: #fff;
-    transform: scale(1.1);
- }
+.vote-button:hover {
+  color: var(--text-light);
+  transform: scale(1.15); /* More pronounced hover scale */
+}
+.vote-button.upvote:hover {
+   text-shadow: 0 0 8px lightgreen; /* Greenish glow for upvote */
+}
+.vote-button.downvote:hover {
+    text-shadow: 0 0 8px lightcoral; /* Reddish glow for downvote */
+}
 
- .vote-count {
-    font-size: 0.7em; /* Smaller font for the count */
-    color: #ccc;
- }
 
- .score {
-    font-size: 0.8em;
-    color: #ddd;
-    font-weight: bold;
- }
+.vote-count {
+  font-size: 0.7em;
+  color: var(--text-secondary);
+}
 
-/* Optional: Different hover colors? */
-.upvote:hover { color: lightgreen; } 
-.downvote:hover { color: lightcoral; }
+.score {
+  font-size: 0.85em;
+  color: var(--text-primary);
+  font-weight: bold;
+}

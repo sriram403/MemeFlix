@@ -1,25 +1,28 @@
+/* frontend/src/App.css */
+
 .App {
-   width: 100%; /* Ensure App takes full width of its parent (#root) */
-   min-height: 100vh; /* Ensure App takes full height */
-   display: flex;
-   flex-direction: column;
-   flex-grow: 1; /* Allow App to grow and fill the #root container */
- }
- 
- main {
-   flex-grow: 1;
-   width: 100%; /* Explicitly set main content area width */
-   /* We might want some padding inside main later, but not margin that pushes it */
-   /* padding: 0 20px; /* Example padding */
- }
- 
- footer {
-   background-color: #141414;
-   color: #808080;
-   padding: 15px 0; /* Adjust padding if needed, maybe 0 horizontal padding */
-   text-align: center;
-   font-size: 0.8em;
-   /* margin-top: auto; NO LONGER NEEDED with flex-grow on main and App */
-   border-top: 1px solid #303030;
-   width: 100%; /* Explicitly set footer width */
- }
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  background: var(--dark-gradient); /* Consistent background */
+}
+
+main {
+  flex-grow: 1; /* Takes up space between header and footer */
+  width: 100%;
+  /* Add padding inside main if needed, e.g., for content spacing */
+  /* padding: 0 5%; */ /* Example horizontal padding */
+}
+
+footer {
+  background-color: var(--primary-dark-bg); /* Use variable */
+  color: var(--text-secondary); /* Use variable */
+  padding: 15px 5%; /* Use percentage padding? */
+  text-align: center;
+  font-size: 0.8em;
+  border-top: 1px solid var(--border-color); /* Use variable */
+  width: 100%;
+  margin-top: 40px; /* Add some space above the footer */
+}

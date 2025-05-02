@@ -1,118 +1,154 @@
 /* frontend/src/components/MemeDetailModal.css */
 
 .modal-overlay {
-    position: fixed; /* Position relative to the viewport */
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent black background */
-    display: flex;
-    justify-content: center; /* Center content horizontally */
-    align-items: center;     /* Center content vertically */
-    z-index: 1000; /* Ensure it's on top of other content */
-    cursor: pointer; /* Indicate background is clickable */
-  }
-  
-  .modal-content {
-    background-color: #1f1f1f;
-    padding: 0; /* Remove padding, apply to inner sections */
-    border-radius: 8px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
-    position: relative;
-    max-width: 90%;
-    /* Change max-height to rely on flexbox and viewport */
-    /* max-height: 90%; */
-    height: 90vh; /* Use height instead? Or rely on flex? Let's try height */
-    overflow: hidden; /* Prevent content spill, rely on inner scroll */
-    cursor: default;
-    display: flex;
-    flex-direction: column; /* Stack media and info vertically */
-  }
-  
-  .modal-close-button {
-    position: absolute; /* Position relative to modal-content */
-    top: 10px;
-    right: 15px;
-    background: none;
-    border: none;
-    font-size: 1.8em; /* Make 'X' larger */
-    color: #aaa;
-    cursor: pointer;
-    line-height: 1; /* Adjust line height for better positioning */
-    padding: 0;
-  }
-  
-  .modal-close-button:hover {
-    color: #fff;
-  }
-  
-  .modal-content h2 {
-    color: #e5e5e5;
-    margin-top: 0; /* Remove default margin */
-    margin-bottom: 15px;
-    text-align: center;
-  }
-  
-  .modal-media {
-    width: 100%;
-    /* Let flexbox determine height based on content and available space */
-    /* Remove max-height here, control overall via modal-content */
-    /* max-height: 70vh; */
-    /* max-width: 70vw; */ /* Maybe remove max-width too? rely on modal-content max-width */
-    margin: 0; /* Remove margin */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: #000;
-    flex-shrink: 0; /* Prevent media area from shrinking */
-    position: relative; /* For potential future overlays */
-    /* Maybe set a max-height relative to the modal-content? */
-     max-height: 75%; /* Limit media height to 75% of modal content height */
-  
-  }
-  
-  .modal-media img,
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.85); /* Slightly darker overlay */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  cursor: pointer;
+  /* --- Optional: Glassmorphism --- */
+  /* Requires browser support & can impact performance */
+  /* backdrop-filter: blur(8px); */
+  /* -webkit-backdrop-filter: blur(8px); */
+  /* --- End Optional --- */
+
+  /* Fade-in animation */
+  opacity: 0;
+  animation: fadeIn 0.3s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+
+.modal-content {
+  /* Subtle Gradient for modal */
+  background-image: linear-gradient(145deg, #2a2a2a 0%, #1f1f1f 100%);
+  padding: 0;
+  border-radius: 8px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6); /* Stronger shadow */
+  position: relative;
+  max-width: 85%; /* Slightly smaller max-width */
+  height: 85vh; /* Slightly smaller max-height */
+  overflow: hidden;
+  cursor: default;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color); /* Add subtle border */
+
+  /* Scale-up animation */
+  transform: scale(0.95);
+  animation: scaleUp 0.3s 0.1s ease forwards; /* Delay scale animation slightly */
+}
+
+@keyframes scaleUp {
+  from { transform: scale(0.95); }
+  to { transform: scale(1.0); }
+}
+
+
+.modal-close-button {
+  position: absolute;
+  top: 15px; /* Adjust position */
+  right: 15px;
+  background: rgba(0, 0, 0, 0.5); /* Darker background for button */
+  border: none;
+  border-radius: 50%; /* Circular button */
+  width: 30px;
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.2em; /* Adjust 'X' size */
+  color: var(--text-secondary);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  z-index: 10; /* Ensure button is above content */
+}
+
+.modal-close-button:hover {
+  background-color: rgba(0, 0, 0, 0.8);
+  color: var(--text-light);
+  transform: rotate(90deg); /* Rotate 'X' on hover */
+}
+
+.modal-media {
+  width: 100%;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #000;
+  flex-shrink: 0;
+  position: relative;
+  max-height: 70%; /* Adjusted max-height */
+  border-bottom: 1px solid var(--border-color); /* Separator line */
+}
+
+.modal-media img,
 .modal-media video {
   display: block;
   max-width: 100%;
-  max-height: 100%; /* Limited by .modal-media's max-height */
+  max-height: 100%;
   height: auto;
   width: auto;
   object-fit: contain;
 }
-  
-/* --- NEW/MODIFIED: Info Section Styles --- */
+
 .modal-info {
-  padding: 20px 30px; /* Add padding here */
-  flex-grow: 1; /* Allow info section to take remaining space */
-  overflow-y: auto; /* Allow ONLY info section to scroll if needed */
-  /* background-color: #2a2a2a; /* Optional different background */
+  padding: 20px 30px 25px 30px; /* Adjust padding */
+  flex-grow: 1;
+  overflow-y: auto; /* Scroll only this section */
 }
 
 
 .modal-info h2 {
-  color: #e5e5e5;
+  color: var(--text-light); /* Brighter title */
   margin-top: 0;
   margin-bottom: 15px;
-  text-align: left; /* Align title left */
+  text-align: left;
+  font-size: 1.5em; /* Larger title */
+  font-weight: 500;
 }
 
 .modal-description,
 .modal-tags {
-    color: #ccc;
-    font-size: 0.9em;
-    line-height: 1.4;
+    color: var(--text-primary); /* Slightly brighter text */
+    font-size: 0.95em;
+    line-height: 1.5;
     margin-top: 10px;
     margin-bottom: 10px;
 }
 
 .modal-tags {
-    color: #aaa;
+    color: var(--text-secondary); /* Keep tags dimmer */
     font-style: italic;
 }
-  /* Optional: Add styles for description/tags if you add them */
-  .modal-content p {
-      color: #ccc;
-      margin-top: 15px;
-  }
+
+/* Custom Scrollbar (Optional, Webkit browsers) */
+.modal-info::-webkit-scrollbar {
+  width: 8px;
+}
+.modal-info::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+.modal-info::-webkit-scrollbar-thumb {
+  background-color: var(--accent-red);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.modal-info::-webkit-scrollbar-thumb:hover {
+  background-color: #f40612;
+}

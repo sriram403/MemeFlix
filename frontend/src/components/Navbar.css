@@ -1,60 +1,78 @@
-/* Basic styles for Navbar.css */
+/* frontend/src/components/Navbar.css */
+
 .navbar {
-    background-color: #141414; /* Slightly darker background for navbar */
-    padding: 10px 20px;       /* Add some space inside the navbar (top/bottom, left/right) */
-    color: #e5e5e5;           /* Light grey text color */
-    display: flex;            /* Use Flexbox to arrange items horizontally */
-    justify-content: space-between; /* Space out brand, links, search */
-    align-items: center;      /* Vertically center items */
-    border-bottom: 1px solid #303030; /* Subtle line at the bottom */
-  }
-  
-  .navbar-brand {
-    font-size: 1.5em;       /* Make the "Memeflix" text bigger */
-    font-weight: bold;
-    color: #e50914;         /* Netflix-red color for brand (optional) */
-  }
-  
-  .navbar-links a {
-    color: #e5e5e5;
-    text-decoration: none;  /* Remove underline from links */
-    margin-left: 15px;      /* Space out the links */
-    font-size: 0.9em;
-  }
-  
-  .navbar-links a:hover {
-    color: #ffffff;         /* Make links white on hover */
-  }
-  
-  .navbar-search input {
-    padding: 5px 8px;
-    background-color: #333;
-    border: 1px solid #555;
-    color: #fff;
-    border-radius: 3px; /* Slightly rounded corners */
-    margin-right: 5px;  /* Add space between input and button */
-  }
-  
-  .navbar-search input::placeholder {
-    color: #aaa; /* Style the placeholder text */
-  }
+  /* Subtle gradient for navbar */
+  background-image: linear-gradient(to bottom, #1a1a1a, var(--primary-dark-bg));
+  padding: 10px 5%; /* Use percentage padding for responsiveness */
+  color: var(--text-primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  position: sticky; /* Make navbar sticky */
+  top: 0;
+  z-index: 900; /* Ensure it's above content but below modal */
+  /* Add subtle shadow to differentiate when scrolling */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
 
-  .navbar-search {
-    display: flex; /* Align input and button */
-    align-items: center;
-  }
+.navbar-brand {
+  font-size: 1.6em;
+  font-weight: bold;
+  color: var(--accent-red);
+  text-shadow: 0 0 5px var(--accent-red-glow); /* Add subtle glow to brand */
+}
 
-  .navbar-search button {
-    padding: 5px 10px;
-    background-color: #e50914; /* Netflix red */
-    color: white;
-    border: none;
-    border-radius: 3px;
-    cursor: pointer;
-    font-size: 0.9em;
-    transition: background-color 0.2s ease;
-  }
-  
-  .navbar-search button:hover {
-    background-color: #f40612; /* Slightly brighter red on hover */
-  }
+.navbar-links a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  margin-left: 20px; /* Increased spacing */
+  font-size: 1em; /* Slightly larger */
+  transition: color 0.2s ease, text-shadow 0.2s ease; /* Added text-shadow transition */
+}
+
+.navbar-links a:hover {
+  color: var(--text-light);
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.5); /* Subtle white glow on hover */
+}
+
+.navbar-search {
+  display: flex;
+  align-items: center;
+}
+
+.navbar-search input {
+  padding: 8px 12px; /* Slightly larger padding */
+  background-color: rgba(0, 0, 0, 0.5); /* More transparent background */
+  border: 1px solid var(--border-color);
+  color: var(--text-light);
+  border-radius: 3px;
+  margin-right: 8px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.navbar-search input:focus {
+   border-color: var(--accent-red);
+   box-shadow: 0 0 8px var(--accent-red-glow);
+   outline: none;
+}
+
+.navbar-search input::placeholder {
+  color: var(--text-secondary);
+}
+
+.navbar-search button {
+  padding: 8px 15px;
+  background-color: var(--accent-red);
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease; /* Added box-shadow transition */
+  box-shadow: 0 0 0px transparent; /* Start with no shadow */
+}
+
+.navbar-search button:hover {
+  background-color: #f40612; /* Slightly brighter red */
+  box-shadow: 0 0 10px 2px var(--accent-red-glow); /* Add glow on hover */
+}

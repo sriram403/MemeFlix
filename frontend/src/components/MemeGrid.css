@@ -1,38 +1,39 @@
 /* frontend/src/components/MemeGrid.css */
 
-.meme-grid-container { /* Style the optional outer container */
-    padding: 20px;
+.meme-grid-container {
+    padding: 30px 5%; /* Use percentage padding */
 }
 
-.meme-grid-container h2 { /* Style the heading */
-    color: #e5e5e5;
-    margin-bottom: 20px;
-    font-size: 1.4em;
+.meme-grid-container h2 {
+    color: var(--text-light); /* Brighter heading */
+    margin-bottom: 25px;
+    font-size: 1.6em; /* Larger heading */
+    font-weight: 500;
+    border-left: 4px solid var(--accent-red); /* Accent line */
+    padding-left: 10px;
 }
 
 .meme-grid {
-  display: grid; /* Use CSS Grid layout */
-  /* Create columns that are flexible (min 200px, max 1fr - fractional unit) */
+  display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 20px; /* Space between grid items (cards) */
-  padding: 0; /* Remove padding if container has it */
-  color: #ccc; /* Remove this later if not needed */
+  /* Adjust gap slightly if needed */
+  gap: 25px 20px; /* Row gap, Column gap */
+  padding: 0;
 }
 
-/* ... Keep loading, info-message, error-message styles ... */
+/* Loading/Error/Info Messages */
 .loading, .info-message, .error-message {
-    padding: 40px 20px;
+    padding: 60px 20px; /* More padding */
     text-align: center;
-    font-size: 1.2em;
-    color: #aaa;
+    font-size: 1.3em; /* Larger text */
+    color: var(--text-secondary);
+    min-height: 200px; /* Ensure takes some space */
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
+
 .error-message {
-    color: #e50914;
+    color: var(--accent-red);
     font-weight: bold;
 }
-
-/* Remove the old ul/li styles */
-/*
-.meme-grid ul { ... }
-.meme-grid li { ... }
-*/

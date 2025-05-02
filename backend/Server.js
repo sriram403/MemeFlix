@@ -31,7 +31,7 @@ app.use(express.json());
 app.get('/api/memes', (req, res) => {
   // 1. Get page and limit from query params, provide defaults
   const page = parseInt(req.query.page || '1', 10); // Default to page 1
-  const limit = parseInt(req.query.limit || '2', 10); // Default to 12 memes per page
+  const limit = parseInt(req.query.limit || '2', 5); // Default to 12 memes per page
 
   // Basic validation for positive integers
   if (isNaN(page) || page < 1 || isNaN(limit) || limit < 1) {

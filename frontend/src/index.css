@@ -1,12 +1,29 @@
-/* A very basic reset and dark theme setup */
+/* frontend/src/index.css */
+
+/* Define CSS Variables for easier theme management */
 :root {
+  --primary-dark-bg: #141414;
+  --secondary-dark-bg: #1f1f1f;
+  --card-bg: #2a2a2a;
+  --accent-red: #e50914;
+  --accent-red-glow: rgba(229, 9, 20, 0.6);
+  --text-primary: #e5e5e5;
+  --text-secondary: #aaa;
+  --text-light: #ffffff;
+  --border-color: #303030;
+  --shadow-color-light: rgba(0, 0, 0, 0.3);
+  --shadow-color-heavy: rgba(0, 0, 0, 0.5);
+
+  /* Subtle Background Gradient */
+  --dark-gradient: linear-gradient(180deg, #181818 0%, #101010 100%);
+
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark; /* Enable basic light/dark mode based on OS */
-  color: rgba(255, 255, 255, 0.87); /* Default text color for dark mode */
-  background-color: #242424; /* Default background for dark mode */
+  color-scheme: dark; /* Force dark mode */
+  color: var(--text-primary);
+  background: var(--dark-gradient); /* Use gradient for main background */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -14,22 +31,64 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-body {
-  margin: 0; /* Remove default browser margin */
-  /* REMOVE display: flex; */
-  /* REMOVE place-items: center; */
-  min-width: 320px; /* Keep minimum width */
-  min-height: 100vh; /* Keep minimum height */
-  /* Background color is set in :root or can be set here */
-  /* background-color: #242424; */ /* Ensure it's set somewhere */
+/* Basic Reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-/* Optional: Ensure the root div also spans full height */
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--dark-gradient); /* Ensure body also has gradient */
+}
+
 #root {
    width: 100%;
    min-height: 100vh;
-   display: flex; /* Use flexbox on the root div */
-   flex-direction: column; /* Stack App component vertically */
+   display: flex;
+   flex-direction: column;
 }
 
-/* You can probably remove most other default styles below this */
+/* Default Link Styles */
+a {
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: inherit;
+  transition: color 0.2s ease;
+}
+a:hover {
+  color: var(--accent-red);
+}
+
+/* Default Button Styles (can be overridden) */
+button {
+  border-radius: 4px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: var(--secondary-dark-bg);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color 0.25s, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+button:hover {
+  border-color: var(--accent-red);
+  box-shadow: 0 0 8px var(--accent-red-glow);
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color; /* Keep focus outline */
+}
+button:disabled {
+  background-color: #333;
+  color: #777;
+  cursor: not-allowed;
+  border-color: #444;
+  box-shadow: none;
+}
