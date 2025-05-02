@@ -1,0 +1,38 @@
+/* frontend/src/components/SearchControls.css */
+.search-controls {
+    display: flex;
+    justify-content: center; /* Or flex-start / flex-end */
+    gap: 30px; /* Space between control groups */
+    padding: 15px 5%; /* Match page padding */
+    margin-bottom: 20px; /* Space below controls */
+    background-color: rgba(0, 0, 0, 0.2); /* Subtle background */
+    border-bottom: 1px solid var(--border-color);
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Space between label and select */
+}
+
+.control-group label {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+.control-group select {
+    padding: 6px 10px;
+    background-color: var(--secondary-dark-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 0.9em;
+    cursor: pointer;
+}
+
+.control-group select:focus {
+    outline: none;
+    border-color: var(--accent-red);
+    box-shadow: 0 0 8px var(--accent-red-glow);
+}

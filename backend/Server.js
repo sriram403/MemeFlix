@@ -92,14 +92,62 @@ app.get('/api/memes', (req, res) => {
   }).catch(err => { console.error("DB fetch memes error:", err.message); res.status(500).json({ error: 'Failed to retrieve memes.' }); });
 });
 
+// *** UPDATED Search Route with Filtering & Sorting ***
 app.get('/api/memes/search', (req, res) => {
-  const query = req.query.q;
-  if (!query) return res.status(400).json({ error: 'Query "q" required.' });
-  const sql = `SELECT * FROM memes WHERE lower(title) LIKE ? OR lower(description) LIKE ? OR lower(tags) LIKE ? ORDER BY uploaded_at DESC`;
-  const searchTerm = `%${query.toLowerCase()}%`;
-  db.all(sql, [searchTerm, searchTerm, searchTerm], (err, rows) => {
-    if (err) { console.error("DB search error:", err.message); return res.status(500).json({ error: 'Search failed.' }); }
-    res.status(200).json({ memes: rows || [] });
+  const query = req.query.q || ''; // Default to empty query string if not provided
+  const filterType = req.query.type || ''; // e.g., 'image', 'gif', 'video'
+  const sortBy = req.query.sort || 'newest'; // e.g., 'newest', 'oldest', 'score'
+
+  // --- Build WHERE clause ---
+  let whereClauses = [];
+  let params = [];
+
+  // Text search condition (only add if query exists)
+  if (query) {
+      whereClauses.push(`(lower(title) LIKE ? OR lower(description) LIKE ? OR lower(tags) LIKE ?)`);
+      const searchTerm = `%${query.toLowerCase()}%`;
+      params.push(searchTerm, searchTerm, searchTerm);
+  }
+
+  // Type filter condition (only add if filterType is valid)
+  const validTypes = ['image', 'gif', 'video'];
+  if (filterType && validTypes.includes(filterType.toLowerCase())) {
+      whereClauses.push(`lower(type) = ?`);
+      params.push(filterType.toLowerCase());
+  }
+
+  // Combine WHERE clauses
+  const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+  // --- Build ORDER BY clause ---
+  let orderBySql = 'ORDER BY ';
+  switch (sortBy.toLowerCase()) {
+      case 'oldest':
+          orderBySql += 'uploaded_at ASC';
+          break;
+      case 'score':
+          // Calculate score (up - down) and order by it
+          orderBySql += '(upvotes - downvotes) DESC, uploaded_at DESC'; // Secondary sort by newest
+          break;
+      case 'newest':
+      default: // Default to newest
+          orderBySql += 'uploaded_at DESC';
+          break;
+  }
+
+  // --- Construct Final SQL ---
+  // Note: We are NOT paginating search results on the backend yet for simplicity
+  const sql = `SELECT * FROM memes ${whereSql} ${orderBySql}`;
+
+  // --- Execute Query ---
+  db.all(sql, params, (err, rows) => {
+      if (err) {
+          console.error("DB search error:", err.message);
+          console.error("SQL:", sql); // Log the generated SQL on error
+          console.error("Params:", params); // Log the parameters
+          return res.status(500).json({ error: 'Search failed due to database error.' });
+      }
+      res.status(200).json({ memes: rows || [] });
   });
 });
 
