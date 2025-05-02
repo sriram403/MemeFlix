@@ -1,0 +1,49 @@
+/* frontend/src/components/MemeRow.css */
+.meme-row-container {
+    margin-bottom: 30px; /* Space between rows */
+    padding: 0 5%; /* Match page padding */
+}
+
+.meme-row-title {
+    color: var(--text-light);
+    margin-bottom: 15px; /* Space below title */
+    font-size: 1.4em;
+    font-weight: 500;
+    /* Optional: remove border */
+    /* border-left: 4px solid var(--accent-red); */
+    /* padding-left: 10px; */
+}
+
+.meme-row {
+    display: flex;
+    overflow-x: auto; /* Enable horizontal scrolling */
+    overflow-y: hidden; /* Hide vertical scrollbar */
+    padding-bottom: 20px; /* Space for scrollbar and hover effect */
+    gap: 10px; /* Smaller gap for horizontal row */
+
+    /* Hide scrollbar visually (optional, browser-dependent) */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+}
+.meme-row::-webkit-scrollbar {
+    display: none; /* Safari and Chrome */
+}
+
+/* Ensure cards in the row don't shrink */
+.meme-row .meme-card {
+    flex-shrink: 0;
+    width: 250px; /* Give cards a fixed width in horizontal scroll */
+    /* Override margin if needed */
+    margin: 0;
+    /* Adjust hover effect origin if needed */
+    /* transform-origin: center center; */
+}
+
+.loading-row, .error-row {
+    color: var(--text-secondary);
+    height: 200px; /* Placeholder height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-style: italic;
+}

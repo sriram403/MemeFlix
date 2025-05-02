@@ -1,160 +1,117 @@
+// frontend/src/pages/HomePage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+// Removed useSearchParams if search handled only in Navbar
 import { useAuth, axiosInstance } from '../contexts/AuthContext';
-import MemeGrid from '../components/MemeGrid';
+import MemeRow from '../components/MemeRow'; // Import MemeRow
 import MemeDetailModal from '../components/MemeDetailModal';
-import PaginationControls from '../components/PaginationControls';
 import HeroBanner from '../components/HeroBanner';
+// Removed MemeGrid and PaginationControls imports from this page
 
 const API_BASE_URL = 'http://localhost:3001';
-const MEMES_PER_PAGE = 12;
+const ROW_MEME_LIMIT = 15; // How many memes to fetch per row
 
 function HomePage() {
-    const [memes, setMemes] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const [selectedMeme, setSelectedMeme] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(0);
+    const [featuredMeme, setFeaturedMeme] = useState(null);
+    const [loadingFeatured, setLoadingFeatured] = useState(true); // Loading state for banner
 
     const { isAuthenticated, addFavorite, removeFavorite, isFavorite, loadingFavorites } = useAuth();
-    const [searchParams] = useSearchParams();
-    const searchTerm = searchParams.get('search') || '';
 
-     const fetchMemes = useCallback(async (pageToFetch) => {
-        setLoading(true);
-        setError(null);
-        let url = '';
-        const params = {};
-
-        if (searchTerm) {
-            url = `${API_BASE_URL}/api/memes/search`;
-            params.q = searchTerm;
-            // Reset page state locally if search term changes, handled in dependency effect
-            setTotalPages(0); // Hide pagination during search
-        } else {
-            url = `${API_BASE_URL}/api/memes`;
-            params.page = pageToFetch; // Use the passed page number
-            params.limit = MEMES_PER_PAGE;
-        }
-
-        try {
-            const response = await axiosInstance.get(url, { params });
-            setMemes(response.data.memes || []);
-
-            if (!searchTerm && response.data.pagination) {
-                setTotalPages(response.data.pagination.totalPages);
-                // Check if fetched page matches current requested page (to avoid race conditions)
-                if (response.data.pagination.currentPage !== pageToFetch) {
-                    // If backend gives a different page than requested (e.g., invalid page requested), adjust
-                     if(pageToFetch > response.data.pagination.totalPages && response.data.pagination.totalPages > 0){
-                        setCurrentPage(response.data.pagination.totalPages); // Go to last valid page
-                     }
-                     // Or if backend corrected it for other reasons, trust the backend's current page
-                     // setCurrentPage(response.data.pagination.currentPage);
-                }
-            } else if (searchTerm) {
-                 setTotalPages(0);
+    // Fetch data specifically for the hero banner (e.g., most recent or truly featured)
+    const fetchFeaturedMeme = useCallback(async () => {
+        setLoadingFeatured(true);
+         try {
+            const response = await axiosInstance.get('/api/memes', { params: { page: 1, limit: 1 } });
+            if (response.data.memes && response.data.memes.length > 0) {
+                setFeaturedMeme(response.data.memes[0]);
+            } else {
+                setFeaturedMeme(null); // Handle case where no memes exist
             }
-        } catch (err) {
-            console.error("Error fetching memes:", err);
-            setError(searchTerm ? `Failed to search memes for "${searchTerm}".` : 'Failed to load memes.');
-            setTotalPages(0);
-            setMemes([]);
+        } catch (error) {
+            console.error("Error fetching featured meme:", error);
+            setFeaturedMeme(null);
         } finally {
-            setLoading(false);
+            setLoadingFeatured(false);
         }
-    }, [searchTerm]); // Remove currentPage dependency here
+    }, [axiosInstance]);
 
-     useEffect(() => {
-        // Reset to page 1 when search term changes
-        if (searchTerm) {
-            setCurrentPage(1);
-            fetchMemes(1); // Fetch page 1 for new search term
-        } else {
-            fetchMemes(currentPage); // Fetch current page when search is cleared or page changes
-        }
-    }, [searchTerm, currentPage, fetchMemes]); // Depend on search, page, and the memoized fetch function
+    useEffect(() => {
+        fetchFeaturedMeme();
+    }, [fetchFeaturedMeme]);
 
 
+    // Define the rows with different API URLs (fetching different 'pages' as rows)
+    const memeRowsConfig = [
+        { title: 'Fresh Memes', fetchUrl: `/api/memes?page=1&limit=${ROW_MEME_LIMIT}` },
+        { title: 'More Memes', fetchUrl: `/api/memes?page=2&limit=${ROW_MEME_LIMIT}` },
+        { title: 'Keep Scrolling', fetchUrl: `/api/memes?page=3&limit=${ROW_MEME_LIMIT}` },
+        { title: 'You Might Like These', fetchUrl: `/api/memes?page=4&limit=${ROW_MEME_LIMIT}` },
+        // { title: 'Funny Memes', fetchUrl: `/api/memes/tag/funny?limit=${ROW_MEME_LIMIT}` },
+    ];
+
+    // Modal Handlers
     const openModal = (meme) => { setSelectedMeme(meme); setIsModalOpen(true); };
     const closeModal = () => { setIsModalOpen(false); setSelectedMeme(null); };
 
-    const handlePageChange = (newPage) => {
-        if (newPage >= 1 && (!totalPages || newPage <= totalPages)) {
-            setCurrentPage(newPage);
-            window.scrollTo(0, 0);
-        }
-    };
-
+    // Vote Handler
      const handleVote = useCallback(async (memeId, voteType) => {
-        // This function could potentially be moved to AuthContext if preferred
-        if (!isAuthenticated && voteType !== 'view') { // Allow viewing without auth?
-            alert("Please log in to vote.");
-            return;
-        }
-        const originalMemes = [...memes];
-        let updatedMemeData = null;
-
-        setMemes(prevMemes => prevMemes.map(meme => {
-            if (meme.id === memeId) {
-                updatedMemeData = { ...meme, upvotes: voteType === 'upvote' ? meme.upvotes + 1 : meme.upvotes, downvotes: voteType === 'downvote' ? meme.downvotes + 1 : meme.downvotes };
-                if (selectedMeme && selectedMeme.id === memeId) setSelectedMeme(updatedMemeData);
-                return updatedMemeData;
-            }
-            return meme;
-        }));
+        if (!isAuthenticated) { alert("Please log in to vote."); return; }
 
         try {
-            const voteUrl = `/api/memes/${memeId}/${voteType}`;
-            await axiosInstance.post(voteUrl);
+            await axiosInstance.post(`/api/memes/${memeId}/${voteType}`);
+            console.log(`Vote ${voteType} registered for ${memeId}`);
+            if (selectedMeme && selectedMeme.id === memeId) {
+                 setSelectedMeme(prev => ({
+                    ...prev,
+                    upvotes: voteType === 'upvote' ? (prev.upvotes ?? 0) + 1 : prev.upvotes,
+                    downvotes: voteType === 'downvote' ? (prev.downvotes ?? 0) + 1 : prev.downvotes,
+                 }));
+            }
+            // Note: No optimistic UI update for rows here
         } catch (error) {
-            console.error(`Error ${voteType}ing meme ${memeId}:`, error);
-            alert(`Failed to register ${voteType}.`);
-            setMemes(originalMemes);
-             if (selectedMeme && selectedMeme.id === memeId) {
-                 const originalMemeInList = originalMemes.find(m => m.id === memeId);
-                 if(originalMemeInList) setSelectedMeme(originalMemeInList);
-             }
+             // *** CORRECTED ERROR HANDLING ***
+             console.error(`Error ${voteType}ing meme ${memeId}:`, error);
+             alert(`Failed to register ${voteType}.`);
+             // *** END CORRECTION ***
         }
-    }, [memes, selectedMeme, isAuthenticated, axiosInstance]);
+    }, [isAuthenticated, selectedMeme, axiosInstance]); // Removed row state dependencies
 
+    // Favorite Toggle Handler
      const handleFavoriteToggle = useCallback(async (memeId) => {
-         if (!isAuthenticated) {
-             alert("Please log in to manage your list.");
-             return;
-         }
+         if (!isAuthenticated) { alert("Please log in."); return; }
          if (loadingFavorites) return;
          const currentlyFavorite = isFavorite(memeId);
          if (currentlyFavorite) { await removeFavorite(memeId); }
          else { await addFavorite(memeId); }
      }, [isAuthenticated, loadingFavorites, isFavorite, addFavorite, removeFavorite]);
 
-    const featuredMeme = !loading && !error && memes.length > 0 && !searchTerm ? memes[0] : null;
 
     return (
         <>
-             {featuredMeme && <HeroBanner featuredMeme={featuredMeme} onPlayClick={openModal} onFavoriteToggle={handleFavoriteToggle}/>}
+             {!loadingFeatured && featuredMeme &&
+                <HeroBanner
+                    featuredMeme={featuredMeme}
+                    onPlayClick={openModal}
+                    onFavoriteToggle={handleFavoriteToggle}
+                />
+             }
+             {loadingFeatured && <div className="loading-row">Loading Banner...</div>}
 
-            <MemeGrid
-                memes={memes}
-                loading={loading}
-                error={error}
-                onMemeClick={openModal}
-                onVote={handleVote}
-                onFavoriteToggle={handleFavoriteToggle}
-            />
+            <div className="meme-rows-wrapper">
+                {memeRowsConfig.map(rowConfig => (
+                    <MemeRow
+                        key={rowConfig.title}
+                        title={rowConfig.title}
+                        fetchUrl={rowConfig.fetchUrl}
+                        onMemeClick={openModal}
+                        onVote={handleVote}
+                        onFavoriteToggle={handleFavoriteToggle}
+                    />
+                ))}
+            </div>
 
-            {!loading && !error && totalPages > 1 && !searchTerm && (
-               <PaginationControls
-                   currentPage={currentPage}
-                   totalPages={totalPages}
-                   onPageChange={handlePageChange}
-               />
-            )}
-
-             {isModalOpen && (
+            {isModalOpen && (
                 <MemeDetailModal
                     meme={selectedMeme}
                     onClose={closeModal}
