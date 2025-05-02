@@ -1,18 +1,12 @@
-// frontend/src/contexts/AuthContext.jsx
-// You can copy-paste the whole file content below
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 
-const API_BASE_URL = 'http://localhost:3001'; // Your backend URL
+const API_BASE_URL = 'http://localhost:3001';
 
-// Create the context
 const AuthContext = createContext(null);
 
-// Create an Axios instance for API calls that might need auth
-const axiosInstance = axios.create({
-    baseURL: API_BASE_URL,
-});
+const axiosInstance = axios.create({ baseURL: API_BASE_URL });
 
 // Interceptor to add token to requests
 axiosInstance.interceptors.request.use(
@@ -31,32 +25,24 @@ axiosInstance.interceptors.request.use(
 
 // Create the provider component
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null); // Holds logged-in user info { id, username }
-    const [token, setToken] = useState(localStorage.getItem('memeflix_token')); // Get token from storage
-    const [loading, setLoading] = useState(true); // Loading state for initial auth check
+    const [user, setUser] = useState(null);
+    const [token, setToken] = useState(() => localStorage.getItem('memeflix_token')); // Use function initializer
+    const [loading, setLoading] = useState(true);
 
-    // Effect to set token in axios instance and local storage
     useEffect(() => {
         if (token) {
             localStorage.setItem('memeflix_token', token);
-            // Verify token and fetch user info on initial load or token change
+            setLoading(true); // Set loading true while verifying token
             axiosInstance.get('/api/auth/me')
-                .then(response => {
-                    setUser(response.data); // Set user info from /me endpoint
-                })
-                .catch(() => {
-                    // Token invalid or expired
-                    handleLogout(); // Clear invalid token and user state
-                })
-                .finally(() => {
-                    setLoading(false);
-                });
-
+                .then(response => { setUser(response.data); })
+                .catch(() => { handleLogout(false); }) // Pass false to prevent redundant toast
+                .finally(() => { setLoading(false); });
         } else {
             localStorage.removeItem('memeflix_token');
             setUser(null);
-            setLoading(false); // No token, not loading
+            setLoading(false);
         }
+        // Don't depend on handleLogout here
     }, [token]);
 
     // Login function
@@ -90,33 +76,31 @@ export const AuthProvider = ({ children }) => {
     };
 
     // Logout function
-    const handleLogout = () => {
-        setToken(null); // This will trigger useEffect to clear localStorage and user
+    // Updated logout to accept flag and show toast
+    const handleLogout = (showToast = true) => {
+        setToken(null); // Triggers useEffect to clear storage and user
+        if (showToast) {
+            toast.success("You have been logged out.");
+        }
     };
 
     // Value provided by the context
     const value = {
         user,
         token,
-        loading, // Provide loading state for initial auth check
+        loading,
         login,
         register,
-        logout: handleLogout,
-        isAuthenticated: !!user, // Boolean flag for convenience
+        logout: handleLogout, // Provide the updated handler
+        isAuthenticated: !!user,
     };
 
     return (
         <AuthContext.Provider value={value}>
-            {/* Don't render children until initial auth check is done */}
             {!loading && children}
         </AuthContext.Provider>
     );
 };
 
-// Custom hook to use the auth context
-export const useAuth = () => {
-    return useContext(AuthContext);
-};
-
-// Export the Axios instance if other parts of the app need it
+export const useAuth = () => { return useContext(AuthContext); };
 export { axiosInstance };

@@ -1,80 +1,87 @@
-// frontend/src/App.jsx
-// Wrap content in Routes, define paths for Login/Register/Home
-// You can copy-paste the whole file content below
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { Routes, Route, useLocation, useSearchParams } from 'react-router-dom'; // Import routing components
-import axios from 'axios'; // Keep axios for non-authed instance if needed? Or rely on AuthContext's instance
+import { Routes, Route, useLocation, useSearchParams, useNavigate } from 'react-router-dom'; // Added useNavigate
+import axios from 'axios';
+// --- React Toastify Imports ---
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+// --- End React Toastify Imports ---
 import './App.css';
 import Navbar from './components/Navbar';
 import MemeGrid from './components/MemeGrid';
 import MemeDetailModal from './components/MemeDetailModal';
 import PaginationControls from './components/PaginationControls';
 import HeroBanner from './components/HeroBanner';
-import LoginPage from './pages/LoginPage'; // Import Login Page
-import RegisterPage from './pages/RegisterPage'; // Import Register Page
-import { useAuth, axiosInstance } from './contexts/AuthContext'; // Import useAuth and axiosInstance
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import { useAuth, axiosInstance } from './contexts/AuthContext';
 
-const API_BASE_URL = 'http://localhost:3001'; // Keep for non-authed calls if any
+const API_BASE_URL = 'http://localhost:3001';
 const MEMES_PER_PAGE = 12;
 
-// --- Main App Component with Routing ---
 function App() {
-    // We'll move state needed only for the Home page inside a new component
-    const { user, loading: authLoading, isAuthenticated } = useAuth(); // Get auth state
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
+  const location = useLocation(); // Hook to get current route location
 
-    // If initial auth check is still loading, show a simple loader
-    if (authLoading) {
-        return <div className="loading-fullscreen">Loading Authentication...</div>;
-    }
+  // Determine if we are on an auth page
+  const onAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
-    return (
-        <div className="App">
-            {/* Navbar is outside Routes to be persistent */}
-            <Navbar />
+  if (authLoading) {
+      return <div className="loading-fullscreen">Loading Authentication...</div>;
+  }
 
-            <main>
-                <Routes>
-                    {/* Route for the main meme browsing page */}
-                    <Route path="/" element={<HomePage />} />
+  return (
+      <div className="App">
+           {/* --- Add Toast Container --- */}
+           <ToastContainer
+              position="top-right"
+              autoClose={4000} // Close after 4 seconds
+              hideProgressBar={false}
+              newestOnTop={false}
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="dark" // Use dark theme
+           />
+           {/* --- End Toast Container --- */}
 
-                    {/* Route for the Login page */}
-                    <Route path="/login" element={<LoginPage />} />
+          {/* Pass onAuthPage prop to Navbar */}
+          <Navbar onAuthPage={onAuthPage} />
 
-                    {/* Route for the Registration page */}
-                    <Route path="/register" element={<RegisterPage />} />
+          <main>
+              <Routes>
+                  {/* Pass onAuthPage prop to HomePage as well if needed */}
+                  <Route path="/" element={<HomePage onAuthPage={onAuthPage}/>} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
+                  {/* Other routes */}
+              </Routes>
+          </main>
 
-                    {/* Add other routes here later (e.g., /profile, /my-list) */}
-
-                    {/* Catch-all route for 404? */}
-                    {/* <Route path="*" element={<h2>Page Not Found</h2>} /> */}
-                </Routes>
-            </main>
-
-            <footer>
-                <p>Memeflix Footer - All Rights Reserved (locally)</p>
-            </footer>
-        </div>
-    );
+          <footer>
+              <p>Memeflix Footer - All Rights Reserved (locally)</p>
+          </footer>
+      </div>
+  );
 }
 
 
 // --- NEW: Component for the Home Page Content ---
-function HomePage() {
-    // State variables moved here from App
-    const [memes, setMemes] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [selectedMeme, setSelectedMeme] = useState(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(0);
+function HomePage({ onAuthPage }) {
+  const [memes, setMemes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedMeme, setSelectedMeme] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
 
-    const { isAuthenticated } = useAuth(); // Use auth state if needed
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate(); // Hook for navigation
 
-    // Get search query from URL
-    const [searchParams, setSearchParams] = useSearchParams();
-    const searchTerm = searchParams.get('search') || ''; // Read search term from URL query param
+  const [searchParams] = useSearchParams();
+  const searchTerm = searchParams.get('search') || '';
 
 
     // --- Data Fetching Effect (similar to before, uses searchTerm from URL) ---
@@ -142,14 +149,23 @@ function HomePage() {
     };
 
     // --- Vote Handler (using axiosInstance potentially) ---
+    // --- Vote Handler (Updated to use Toast) ---
     const handleVote = useCallback(async (memeId, voteType) => {
-        // Check if user is authenticated before allowing vote (optional)
-        if (!isAuthenticated) {
-            alert("Please log in to vote.");
-            // Optionally redirect to login: navigate('/login');
-            return;
-        }
-
+      if (!isAuthenticated) {
+          // Use toast for login prompt
+          toast.info("Please log in to vote.", {
+              position: "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              theme: "dark",
+              onClick: () => navigate('/login') // Optional: navigate on click
+          });
+          return; // Stop vote execution
+      }
         const originalMemes = [...memes];
         let updatedMemeData = null;
 
@@ -169,13 +185,16 @@ function HomePage() {
         }));
 
         try {
-            const voteUrl = `/api/memes/${memeId}/${voteType}`; // Relative URL uses axiosInstance base
-            await axiosInstance.post(voteUrl); // Use authed instance if needed
-            console.log(`Successfully ${voteType}d meme ${memeId} on backend.`);
-        } catch (error) {
-            console.error(`Error ${voteType}ing meme ${memeId}:`, error);
-            alert(`Failed to register ${voteType}. Please try again.`);
-            setMemes(originalMemes);
+          const voteUrl = `/api/memes/${memeId}/${voteType}`;
+          await axiosInstance.post(voteUrl);
+           // Use toast for success feedback (optional, maybe too noisy)
+          // toast.success(`Vote registered!`);
+      } catch (error) {
+          console.error(`Error ${voteType}ing meme ${memeId}:`, error);
+          // Use toast for error feedback
+          toast.error(`Failed to register ${voteType}. Please try again.`);
+          // Rollback UI
+          setMemes(originalMemes);
              if (selectedMeme && selectedMeme.id === memeId) {
                  const originalMemeInList = originalMemes.find(m => m.id === memeId);
                  if(originalMemeInList) setSelectedMeme(originalMemeInList);
@@ -186,10 +205,10 @@ function HomePage() {
     // Determine featured meme for banner
     const featuredMeme = !loading && !error && memes.length > 0 ? memes[0] : null;
 
-
     return (
-        <> {/* Use Fragment as we don't need an extra div */}
-             {!searchTerm && <HeroBanner featuredMeme={featuredMeme} onPlayClick={openModal}/>}
+        <>
+             {/* Only show Hero Banner if NOT on an auth page AND not searching */}
+             {!onAuthPage && !searchTerm && <HeroBanner featuredMeme={featuredMeme} onPlayClick={openModal}/>}
 
             <MemeGrid
                 memes={memes}
@@ -199,7 +218,8 @@ function HomePage() {
                 onVote={handleVote}
             />
 
-            {!loading && !error && totalPages > 1 && !searchTerm && (
+            {/* Only show Pagination if NOT on auth page AND other conditions met */}
+            {!onAuthPage && !loading && !error && totalPages > 1 && !searchTerm && (
                <PaginationControls
                    currentPage={currentPage}
                    totalPages={totalPages}
@@ -207,8 +227,7 @@ function HomePage() {
                />
             )}
 
-            {/* Modal rendering remains the same */}
-             {isModalOpen && (
+            {isModalOpen && (
                 <MemeDetailModal
                     meme={selectedMeme}
                     onClose={closeModal}
@@ -218,6 +237,5 @@ function HomePage() {
         </>
     );
 }
-
 
 export default App;

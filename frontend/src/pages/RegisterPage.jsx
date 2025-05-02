@@ -1,17 +1,15 @@
-// frontend/src/pages/RegisterPage.jsx (New File)
-// You can copy-paste the whole file content below
-
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import './AuthForm.css'; // Shared styles
+import { toast } from 'react-toastify'; // Import toast
+import './AuthForm.css';
 
 function RegisterPage() {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [error, setError] = useState('');
+    // const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const { register } = useAuth();
     const navigate = useNavigate();
@@ -19,20 +17,23 @@ function RegisterPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (password !== confirmPassword) {
-            setError("Passwords don't match.");
+            // setError("Passwords don't match.");
+            toast.error("Passwords don't match."); // Use toast
             return;
         }
-        setError('');
+        // setError('');
         setLoading(true);
         const success = await register(username, email, password);
         setLoading(false);
         if (success) {
             // Redirect to login page after successful registration
-            alert("Registration successful! Please log in."); // Simple feedback
+            // alert("Registration successful! Please log in."); // Simple feedback
+            toast.success("Registration successful! Please log in."); // Use toast
             navigate('/login');
         } else {
             // Error message might be more specific from backend (e.g., username exists)
-            setError('Registration failed. Username or email might already be taken.');
+            // setError('Registration failed. Username or email might already be taken.');
+            toast.error('Registration failed. Username or email might be taken.'); // Use toast
         }
     };
 
@@ -40,7 +41,7 @@ function RegisterPage() {
         <div className="auth-page">
             <form className="auth-form" onSubmit={handleSubmit}>
                 <h2>Register for Memeflix</h2>
-                 {error && <p className="error-message">{error}</p>}
+                 {/* {error && <p className="error-message">{error}</p>} */}
                 <div className="form-group">
                     <label htmlFor="username">Username</label>
                     <input
