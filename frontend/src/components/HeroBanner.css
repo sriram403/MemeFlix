@@ -1,49 +1,133 @@
+/* frontend/src/components/HeroBanner.css */
 .hero-banner {
-  position: relative; height: 60vh; min-height: 450px; background-size: cover;
-  background-position: center 30%; color: #fff; display: flex; align-items: center;
-  padding: 0 5%; margin-bottom: 40px; overflow: hidden;
+  position: relative;
+  height: 60vh; /* Or adjust as needed */
+  min-height: 450px;
+  /* Base background properties */
+  background-size: cover;
+  background-position: center 30%; /* Adjust vertical position if needed */
+  background-repeat: no-repeat; /* Prevent tiling if image is small */
+  color: #fff;
+  display: flex;
+  align-items: center;
+  padding: 0 5%;
+  margin-bottom: 40px;
+  overflow: hidden;
 }
 
+/* Default overlay gradient for text protection, applied to both types */
 .hero-banner::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-    background: linear-gradient(to right, rgba(0, 0, 0, 0.9) 20%, rgba(0, 0, 0, 0.1) 80%), linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 20%);
-    z-index: 0;
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    /* Gradient stronger on the left for text, fading out */
+    background: linear-gradient(to right, rgba(0, 0, 0, 0.85) 20%, rgba(0, 0, 0, 0.5) 50%, transparent 80%);
+    z-index: 1; /* Below content, above background image/gradient */
 }
 
-.hero-content { max-width: 45%; z-index: 1; position: relative; }
+/* Specific style adjustment if needed for video background */
+.hero-banner-video {
+    /* Maybe a slightly different ::before if the inline gradient handles bottom fade? */
+}
+/* Specific style adjustment if needed for image background */
+.hero-banner-image {
+    /* The background-image is set inline */
+}
+.hero-banner-image::before {
+     /* Maybe add the bottom fade back only for images? */
+     background:
+        linear-gradient(to right, rgba(0, 0, 0, 0.85) 20%, rgba(0, 0, 0, 0.5) 50%, transparent 80%),
+        linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, transparent 20%); /* Added bottom fade */
+}
+
+
+.hero-content {
+  max-width: 50%; /* Allow slightly more width */
+  z-index: 2; /* Above the ::before overlay */
+  position: relative;
+}
 
 .hero-title {
-  font-size: 3em; font-weight: 700; margin-bottom: 20px;
-  text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.8); line-height: 1.1;
+  font-size: 3em;
+  font-weight: 700;
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7); /* Slightly adjusted shadow */
+  line-height: 1.1;
 }
 
 .hero-description {
-  font-size: 1.2em; margin-bottom: 30px; line-height: 1.5;
-  max-width: 600px; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  font-size: 1.1em; /* Slightly smaller */
+  margin-top: 15px; /* Add space above description */
+  margin-bottom: 25px; /* Less space below description */
+  line-height: 1.5;
+  max-width: 600px;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+   /* Limit lines shown */
+  display: -webkit-box;
+  -webkit-line-clamp: 3; /* Show max 3 lines */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.hero-buttons { display: flex; gap: 15px; align-items: center; /* Align fav button */ }
+.hero-buttons {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  margin-bottom: 15px; /* Add margin below buttons before description */
+}
 
 .hero-button {
-  padding: 12px 30px; border: none; border-radius: 4px; font-size: 1.1em;
-  font-weight: bold; cursor: pointer; transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
-  display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  padding: 10px 24px; /* Slightly adjusted padding */
+  border: none;
+  border-radius: 4px;
+  font-size: 1.1em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
 }
-.hero-button:hover { transform: scale(1.05); box-shadow: 0 6px 12px rgba(0,0,0,0.4); }
+.hero-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+}
 
-.play-button { background-color: var(--text-light); color: var(--primary-dark-bg); }
-.play-button:hover { background-color: #dddddd; }
+.play-button {
+  background-color: var(--text-light);
+  color: var(--primary-dark-bg);
+}
+.play-button:hover {
+  background-color: #dddddd;
+}
 
-.info-button { background-color: rgba(109, 109, 110, 0.8); color: white; }
-.info-button:hover { background-color: rgba(109, 109, 110, 1); box-shadow: 0 0 10px rgba(150, 150, 150, 0.5); }
+/* Info button removed, styles can be deleted if not used elsewhere */
+/* .info-button { ... } */
+/* .info-button:hover { ... } */
 
-/* Specific style for favorite button in hero to align with others */
+/* Styles for Favorite Button in Hero Banner (from FavoriteButton.css are applied via class) */
 .hero-fav-button {
-    /* Reuse base favorite-button styles but override size/position */
-    position: static; /* Override absolute positioning */
-    width: auto; height: auto; /* Let content size it */
-    padding: 10px; /* Adjust padding */
-    font-size: 1.5em; /* Match icon size maybe */
-    /* Add margin if needed */
-    /* margin-left: 10px; */
+    position: static;
+    width: auto; height: auto;
+    padding: 10px; /* Adjust padding for size */
+    font-size: 1.5em; /* Adjust icon size */
+    border-radius: 50%; /* Keep it circular? Or match other buttons? */
+    background-color: rgba(109, 109, 110, 0.7); /* Match old info button style */
+    border: 1px solid transparent;
+    color: white;
+    line-height: 0; /* Center icon */
+    margin: 0;
+}
+.hero-fav-button:hover:not(:disabled) {
+   background-color: rgba(109, 109, 110, 1);
+   transform: scale(1.1); /* Keep scale */
+   box-shadow: 0 0 10px rgba(150, 150, 150, 0.5);
+}
+/* Filled state for hero button */
+.hero-fav-button.is-favorite {
+    background-color: var(--accent-red); border-color: var(--accent-red); color: white;
+}
+.hero-fav-button.is-favorite:hover:not(:disabled) {
+     background-color: #f40612; box-shadow: 0 0 8px var(--accent-red-glow);
 }
