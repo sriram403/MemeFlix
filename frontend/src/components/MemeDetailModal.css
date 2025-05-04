@@ -126,55 +126,24 @@
     padding: 5px 0;
 }
 
-/* --- Favorite Button Layout --- */
-.modal-fav-button-container {
-    /* Position this separately if needed, or keep it in flow */
-    margin-bottom: 15px; /* Space below favorite button */
-    display: flex; /* If you want to align it */
-    justify-content: flex-start; /* Or center, flex-end */
-    flex-shrink: 0;
-}
-/* Reference existing .favorite-button styles */
-.modal-fav-button-inline {
-    /* Base styles are inherited or defined in FavoriteButton.css */
-    /* Specific overrides for modal context if needed */
-    width: 40px;
-    height: 40px;
-    font-size: 1.6em;
-    background: rgba(50, 50, 50, 0.7);
-    border: 1px solid var(--text-secondary);
-    color: var(--text-secondary);
-}
-.modal-fav-button-inline.is-favorite {
-     color: var(--accent-red);
-     border-color: var(--accent-red);
-     background: rgba(60, 30, 30, 0.7);
-}
-.modal-fav-button-inline:hover:not(:disabled) {
-     transform: scale(1.1);
-     border-color: var(--text-light);
-     background: rgba(80, 80, 80, 0.8);
-     color: var(--text-light);
-     box-shadow: 0 3px 6px rgba(0,0,0,0.5);
-}
-.modal-fav-button-inline.is-favorite:hover:not(:disabled) {
-    color: var(--text-light);
-    background-color: var(--accent-red);
-    border-color: var(--accent-red);
-    box-shadow: 0 0 10px 2px var(--accent-red-glow);
-}
-.modal-fav-button-inline:disabled {
-    cursor: not-allowed; opacity: 0.6; box-shadow: none; transform: none;
-}
+/* --- REMOVED Favorite Button Container Styles --- */
+/* .modal-fav-button-container { ... } */
+/* .modal-fav-button-inline { ... } */ /* (Removed specific inline styles) */
 
 
 /* --- Vote Actions Layout --- */
 .modal-actions {
-  display: flex; justify-content: center; align-items: center; gap: 25px;
-  margin-top: auto; /* Push actions to the bottom of the info section */
-  padding-top: 20px; border-top: 1px solid var(--border-color);
-  flex-shrink: 0; /* Prevent actions shrinking */
+  display: flex;
+  justify-content: center; /* Center items horizontally */
+  align-items: center; /* Center items vertically */
+  gap: 25px; /* Space between items */
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
 }
+
+/* Styles for the regular vote buttons */
 .modal-actions .vote-button {
   background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.8em;
   padding: 5px 10px; display: flex; align-items: center; gap: 6px;
@@ -187,7 +156,59 @@
 .modal-actions .score { font-size: 1em; color: var(--text-light); font-weight: bold; }
 
 
-/* Scrollbar Styling (Unchanged) */
+/* --- Styles for Favorite Button in Actions Bar --- */
+.modal-fav-button-action {
+    /* Override absolute positioning from base .favorite-button */
+    position: static !important; /* Reset position */
+    top: auto !important;
+    right: auto !important;
+
+    /* Inherit sizing/looks from .favorite-button, but adjust */
+    width: 40px; /* Match size used before */
+    height: 40px;
+    font-size: 1.6em; /* Adjust icon size */
+    padding: 0; /* Remove padding if base class has it */
+    margin: 0; /* Reset margins */
+    line-height: 0; /* Help center icon if needed */
+    border-radius: 50%; /* Keep circular */
+
+    /* Ensure it participates in flex layout */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    /* Keep existing hover/active styles */
+    background: rgba(50, 50, 50, 0.7);
+    border: 1px solid var(--text-secondary);
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+.modal-fav-button-action.is-favorite {
+     color: var(--accent-red);
+     border-color: var(--accent-red);
+     background: rgba(60, 30, 30, 0.7);
+}
+.modal-fav-button-action:hover:not(:disabled) {
+     transform: scale(1.1);
+     border-color: var(--text-light);
+     background: rgba(80, 80, 80, 0.8);
+     color: var(--text-light);
+     box-shadow: 0 3px 6px rgba(0,0,0,0.5);
+}
+.modal-fav-button-action.is-favorite:hover:not(:disabled) {
+    color: var(--text-light);
+    background-color: var(--accent-red);
+    border-color: var(--accent-red);
+    box-shadow: 0 0 10px 2px var(--accent-red-glow);
+}
+.modal-fav-button-action:disabled {
+    cursor: not-allowed; opacity: 0.6; box-shadow: none; transform: none;
+}
+
+
+/* --- Scrollbar Styling (Unchanged) --- */
 .modal-info::-webkit-scrollbar { width: 8px; }
 .modal-info::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); border-radius: 4px; }
 .modal-info::-webkit-scrollbar-thumb { background-color: var(--accent-red); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
