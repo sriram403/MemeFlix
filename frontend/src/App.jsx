@@ -6,8 +6,9 @@ import Navbar from './components/Navbar';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import HomePage from './pages/HomePage';
+import BrowsePage from './pages/BrowsePage'; // <-- Import BrowsePage
 import MyListPage from './pages/MyListPage';
-import HistoryPage from './pages/HistoryPage'; // Import HistoryPage
+import HistoryPage from './pages/HistoryPage';
 import { useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -24,6 +25,7 @@ function App() {
             <main>
                 <Routes>
                     <Route path="/" element={<HomePage />} />
+                    <Route path="/browse" element={<BrowsePage />} /> {/* <-- Add Browse Route */}
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
                     <Route
@@ -34,7 +36,6 @@ function App() {
                             </ProtectedRoute>
                         }
                     />
-                    {/* --- NEW: Protected Route for History --- */}
                     <Route
                         path="/history"
                         element={
@@ -43,7 +44,6 @@ function App() {
                             </ProtectedRoute>
                         }
                     />
-                    {/* --- End History Route --- */}
                     <Route path="*" element={<div style={{ padding: '50px', textAlign: 'center' }}><h2>404 - Page Not Found</h2></div>} />
                 </Routes>
             </main>

@@ -1,0 +1,33 @@
+/* frontend/src/pages/BrowsePage.css */
+.browse-page {
+    padding: 30px 5%;
+    min-height: calc(100vh - 200px); /* Adjust based on footer/navbar height */
+}
+
+.browse-page h1 {
+    color: var(--text-light);
+    margin-bottom: 25px;
+    font-size: 1.8em;
+    font-weight: 500;
+    border-left: 4px solid var(--accent-red);
+    padding-left: 10px;
+}
+
+/* Reuse SearchControls styling */
+.browse-page .search-controls {
+    margin-bottom: 30px; /* More space below controls */
+    /* Overrides if needed */
+}
+
+/* Reuse MemeGrid styling */
+.browse-page .meme-grid-container {
+    padding: 0; /* Remove default padding */
+}
+.browse-page .meme-grid-container h2 {
+     display: none; /* Hide default grid title */
+}
+
+/* Reuse PaginationControls styling */
+.browse-page .pagination-controls {
+    margin-top: 30px; /* Add space above pagination */
+}
