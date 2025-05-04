@@ -1,165 +1,319 @@
+// frontend/src/pages/HomePage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { useAuth, axiosInstance } from '../contexts/AuthContext';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import MemeGrid from '../components/MemeGrid';
 import MemeRow from '../components/MemeRow';
 import MemeDetailModal from '../components/MemeDetailModal';
 import HeroBanner from '../components/HeroBanner';
-import MemeGrid from '../components/MemeGrid';
-import SearchControls from '../components/SearchControls';
+import PaginationControls from '../components/PaginationControls';
+import SearchControls from '../components/SearchControls'; // Import SearchControls
+import { useAuth, axiosInstance } from '../contexts/AuthContext';
+import './HomePage.css';
 
-const ROW_MEME_LIMIT = 15;
+const API_BASE_URL = 'http://localhost:3001'; // Ensure consistent base URL usage
 
 function HomePage() {
+    const [memes, setMemes] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1 });
     const [selectedMeme, setSelectedMeme] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [featuredMeme, setFeaturedMeme] = useState(null);
-    const [loadingFeatured, setLoadingFeatured] = useState(true);
-    const [loadingRows, setLoadingRows] = useState(true);
-    const [rowsError, setRowsError] = useState(null);
-    const [rowsData, setRowsData] = useState({});
-    const [searchResults, setSearchResults] = useState([]);
-    const [loadingSearch, setLoadingSearch] = useState(false);
-    const [searchError, setSearchError] = useState(null);
-    const [filterType, setFilterType] = useState('');
-    const [sortBy, setSortBy] = useState('newest');
+    const [popularTags, setPopularTags] = useState([]); // State for popular tags
+    const [tagMemes, setTagMemes] = useState({}); // State for memes keyed by tag { tagName: [memes] }
+    const [loadingTags, setLoadingTags] = useState(true); // Loading state for tags
+    const [loadingTagMemes, setLoadingTagMemes] = useState({}); // Loading state per tag { tagName: boolean }
 
-    const memeRowsConfig = [
-        { title: 'Humor', tag: 'humor' }, { title: 'Reactions', tag: 'reaction' },
-        { title: 'Mystery', tag: 'mystery' }, { title: 'Life', tag: 'life' },
-        { title: 'Internet', tag: 'internet' }, { title: 'Viral', tag: 'viral' },
-        { title: 'Guide', tag: 'guide' },
-    ];
+    const { isAuthenticated, addFavorite, removeFavorite, isFavorite, loadingFavorites, recordView } = useAuth();
+    const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
 
-    const { isAuthenticated, addFavorite, removeFavorite, isFavorite, loadingFavorites } = useAuth();
-    const [searchParams] = useSearchParams();
-    const searchTerm = searchParams.get('search') || '';
+    // --- Search & Filter State ---
+    const initialSearchQuery = searchParams.get('search') || '';
+    const initialFilterType = searchParams.get('type') || '';
+    const initialSortBy = searchParams.get('sort') || 'newest';
+    const [isSearchActive, setIsSearchActive] = useState(!!initialSearchQuery || !!initialFilterType); // Track if search/filter is active
 
-    const fetchFeaturedMeme = useCallback(async () => {
-        setLoadingFeatured(true);
-         try {
-            const response = await axiosInstance.get('/api/memes', { params: { page: 1, limit: 1 } });
-            setFeaturedMeme(response.data.memes?.[0] || null);
-        } catch (error) { console.error("Error fetching featured meme:", error); setFeaturedMeme(null); }
-        finally { setLoadingFeatured(false); }
+    // --- Fetching Logic ---
+    const fetchMemes = useCallback(async (page = 1, query = '', type = '', sort = 'newest') => {
+        setLoading(true);
+        setError(null);
+        setIsSearchActive(!!query || !!type); // Update search active state
+
+        // Update URL Search Params
+        const currentParams = new URLSearchParams(searchParams);
+        if (query) currentParams.set('search', query); else currentParams.delete('search');
+        if (type) currentParams.set('type', type); else currentParams.delete('type');
+        if (sort && sort !== 'newest') currentParams.set('sort', sort); else currentParams.delete('sort');
+        if (page > 1) currentParams.set('page', page); else currentParams.delete('page');
+        setSearchParams(currentParams, { replace: true });
+
+
+        let url = `${API_BASE_URL}/api/memes`;
+        const params = { sort }; // Add sort to general fetch too? Or only search? Let's add.
+
+        if (query || type) { // If search query or type filter exists, use the search endpoint
+            url = `${API_BASE_URL}/api/memes/search`;
+            if (query) params.q = query;
+            if (type) params.type = type;
+            // Search endpoint currently doesn't support pagination on backend
+            // We'll fetch all results and handle display limit on frontend if needed (not ideal)
+        } else { // Otherwise, use the paginated endpoint
+            params.page = page;
+            params.limit = 12; // Or your desired limit
+        }
+
+
+        try {
+            const response = await axiosInstance.get(url, { params });
+            if (response.data) {
+                setMemes(response.data.memes || []);
+                // Use pagination from response if available (non-search endpoint)
+                if (response.data.pagination) {
+                    setPagination(response.data.pagination);
+                } else {
+                    // Reset pagination for search results (as it's not paginated on backend)
+                    setPagination({ currentPage: 1, totalPages: 1, totalMemes: response.data.memes?.length || 0, limit: response.data.memes?.length || 12 });
+                }
+            } else {
+                 setMemes([]);
+                 setPagination({ currentPage: 1, totalPages: 1 });
+            }
+        } catch (err) {
+            console.error("Error fetching memes:", err);
+            setError(`Failed to load memes. ${err.response?.data?.error || err.message}`);
+            setMemes([]);
+             setPagination({ currentPage: 1, totalPages: 1 });
+        } finally {
+            setLoading(false);
+        }
+    }, [axiosInstance, setSearchParams, searchParams]);
+
+
+    // Fetch Featured Meme (run once on mount)
+    useEffect(() => {
+        const fetchFeatured = async () => {
+            try {
+                // Fetch just one latest meme for the hero banner
+                const response = await axiosInstance.get(`${API_BASE_URL}/api/memes`, { params: { page: 1, limit: 1 } });
+                if (response.data?.memes?.length > 0) {
+                    setFeaturedMeme(response.data.memes[0]);
+                }
+            } catch (err) {
+                console.error("Error fetching featured meme:", err);
+                // Don't set main page error for this, just log it.
+            }
+        };
+        fetchFeatured();
+    }, [axiosInstance]); // Empty dependency array ensures it runs only once
+
+
+    // Fetch Popular Tags (run once on mount)
+    useEffect(() => {
+        const fetchTags = async () => {
+            setLoadingTags(true);
+            try {
+                const response = await axiosInstance.get(`${API_BASE_URL}/api/tags/popular`, { params: { limit: 5 } }); // Fetch top 5 tags
+                setPopularTags(response.data?.popularTags || []);
+            } catch (err) {
+                console.error("Error fetching popular tags:", err);
+                setPopularTags([]); // Set empty on error
+            } finally {
+                setLoadingTags(false);
+            }
+        };
+        fetchTags();
     }, [axiosInstance]);
 
-    const fetchAllRowData = useCallback(async () => {
-        setLoadingRows(true);
-        setRowsError(null);
-        try {
-            const rowPromises = memeRowsConfig.map(config =>
-                axiosInstance.get(`/api/memes/tag/${encodeURIComponent(config.tag)}`, { params: { limit: ROW_MEME_LIMIT } })
-                    .then(response => ({ tag: config.tag, memes: response.data.memes || [] }))
-                    .catch(err => {
-                        // *** CORRECTED CATCH BLOCK ***
-                        console.error(`Failed to fetch row for tag "${config.tag}":`, err.message || err);
-                        return { tag: config.tag, memes: [], error: true }; // Mark error
-                        // *** END CORRECTION ***
-                    })
-            );
-            const results = await Promise.all(rowPromises);
-            const newRowsData = {};
-            let encounteredError = false;
-            results.forEach((result, index) => {
-                const currentTag = memeRowsConfig[index]?.tag || 'unknown'; // Get tag even if result is malformed
-                if (result && result.tag) {
-                   newRowsData[result.tag] = result.memes;
-                   if (result.error) encounteredError = true;
-                } else { // Handle case where promise might have rejected entirely before .then/.catch
-                    encounteredError = true;
-                    newRowsData[currentTag] = []; // Ensure tag key exists with empty array
-                    console.error(`Malformed result or promise rejection for tag index ${index} (${currentTag})`);
-                }
-            });
-            setRowsData(newRowsData);
-            if (encounteredError) setRowsError("Could not load data for one or more rows.");
 
-        } catch (error) {
-            console.error("Error fetching row data:", error);
-            setRowsError("Failed to load category rows."); setRowsData({});
-        } finally { setLoadingRows(false); }
-    }, [axiosInstance]); // Removed memeRowsConfig dependency
-
-     const fetchSearchResults = useCallback(async () => {
-        if (!searchTerm) { setSearchResults([]); setLoadingSearch(false); return; }
-        setLoadingSearch(true); setSearchError(null);
-        try {
-            const params = { q: searchTerm };
-            if (filterType) params.type = filterType;
-            if (sortBy) params.sort = sortBy;
-            const response = await axiosInstance.get(`/api/memes/search`, { params });
-            setSearchResults(response.data.memes || []);
-        } catch (error) { console.error("Error fetching search results:", error); setSearchError(`Failed to search.`); setSearchResults([]); }
-        finally { setLoadingSearch(false); }
-    }, [searchTerm, filterType, sortBy, axiosInstance]);
-
+    // Fetch Memes for each Popular Tag (triggered when popularTags changes)
     useEffect(() => {
-        fetchFeaturedMeme();
-        if (!searchTerm) { fetchAllRowData(); setSearchResults([]); setSearchError(null); }
-        else { setRowsData({}); setRowsError(null); }
-    }, [fetchFeaturedMeme, fetchAllRowData, searchTerm]);
+        if (popularTags.length === 0) return;
 
-    useEffect(() => { if (searchTerm) fetchSearchResults(); }, [fetchSearchResults]);
+        popularTags.forEach(tagInfo => {
+            const tagName = tagInfo.tag;
+            if (!tagMemes[tagName] && !loadingTagMemes[tagName]) { // Fetch only if not already fetched or loading
+                setLoadingTagMemes(prev => ({ ...prev, [tagName]: true }));
+                axiosInstance.get(`${API_BASE_URL}/api/memes/by-tag/${encodeURIComponent(tagName)}`, { params: { limit: 10 } }) // Fetch 10 memes per tag
+                    .then(response => {
+                        setTagMemes(prev => ({ ...prev, [tagName]: response.data?.memes || [] }));
+                    })
+                    .catch(err => {
+                        console.error(`Error fetching memes for tag "${tagName}":`, err);
+                        setTagMemes(prev => ({ ...prev, [tagName]: [] })); // Set empty on error for this tag
+                    })
+                    .finally(() => {
+                        setLoadingTagMemes(prev => ({ ...prev, [tagName]: false }));
+                    });
+            }
+        });
+    }, [popularTags, axiosInstance, tagMemes, loadingTagMemes]); // Dependencies ensure this runs when tags load
 
-    const handleFilterChange = (newType) => setFilterType(newType);
-    const handleSortChange = (newSort) => setSortBy(newSort);
-    const openModal = (meme) => { setSelectedMeme(meme); setIsModalOpen(true); };
-    const closeModal = () => { setIsModalOpen(false); setSelectedMeme(null); };
-    const handleFavoriteToggle = useCallback(async (memeId) => { if (!isAuthenticated) { alert("Please log in."); return; } if (loadingFavorites) return; const c = isFavorite(memeId); if(c) await removeFavorite(memeId); else await addFavorite(memeId); }, [isAuthenticated, loadingFavorites, isFavorite, addFavorite, removeFavorite]);
+
+     // Fetch memes based on search params on initial load or when params change
+    useEffect(() => {
+        const page = parseInt(searchParams.get('page') || '1', 10);
+        const query = searchParams.get('search') || '';
+        const type = searchParams.get('type') || '';
+        const sort = searchParams.get('sort') || 'newest';
+        fetchMemes(page, query, type, sort);
+    }, [searchParams, fetchMemes]); // Re-fetch when searchParams change
+
+
+    // --- Event Handlers ---
+    const handlePageChange = (newPage) => {
+        const query = searchParams.get('search') || '';
+        const type = searchParams.get('type') || '';
+        const sort = searchParams.get('sort') || 'newest';
+        fetchMemes(newPage, query, type, sort);
+        window.scrollTo(0, 0); // Scroll to top on page change
+    };
+
     const handleVote = useCallback(async (memeId, voteType) => {
-        if (!isAuthenticated) { alert("Please log in to vote."); return; }
-        const originalRowsData = { ...rowsData }; const originalSearchResults = [...searchResults]; const originalSelectedMeme = selectedMeme ? {...selectedMeme} : null;
-        let wasInRows = false; let wasInSearchResults = false; let updatedMemeData = null;
-        const getUpdatedMeme = (meme) => ({ ...meme, upvotes: voteType === 'upvote' ? (meme.upvotes ?? 0) + 1 : (meme.upvotes ?? 0), downvotes: voteType === 'downvote' ? (meme.downvotes ?? 0) + 1 : (meme.downvotes ?? 0) });
+        if (!isAuthenticated) {
+            alert("Please log in to vote.");
+            return;
+        }
+        const originalMemes = [...memes];
+        let optimisticUpdate = (prevMemes) => prevMemes.map(m => {
+            if (m.id === memeId) {
+                const currentUpvotes = m.upvotes ?? 0;
+                const currentDownvotes = m.downvotes ?? 0;
+                return {
+                    ...m,
+                    upvotes: voteType === 'upvote' ? currentUpvotes + 1 : currentUpvotes,
+                    downvotes: voteType === 'downvote' ? currentDownvotes + 1 : currentDownvotes,
+                };
+            }
+            return m;
+        });
+        
+        setMemes(optimisticUpdate);
+        if (selectedMeme?.id === memeId) setSelectedMeme(prev => ({ ...prev, upvotes: voteType === 'upvote' ? prev.upvotes + 1 : prev.upvotes, downvotes: voteType === 'downvote' ? prev.downvotes + 1 : prev.downvotes }));
 
-        setRowsData(prevRowsData => { const d = {...prevRowsData}; let f = false; for (const t in d) { d[t] = d[t].map(m => { if (m.id === memeId) { f = true; updatedMemeData = getUpdatedMeme(m); return updatedMemeData; } return m; }); } if (f) wasInRows = true; return d; });
-        setSearchResults(prevResults => { let f = false; const r = prevResults.map(m => { if (m.id === memeId) { f = true; const u = updatedMemeData || getUpdatedMeme(m); updatedMemeData = u; return u; } return m; }); if (f) wasInSearchResults = true; return r; });
-        if (selectedMeme && selectedMeme.id === memeId) { const u = updatedMemeData || getUpdatedMeme(selectedMeme); setSelectedMeme(u); }
+        try {
+            await axiosInstance.post(`${API_BASE_URL}/api/memes/${memeId}/${voteType}`);
+            // Optionally re-fetch the single meme data for accuracy, but optimistic is usually fine
+        } catch (err) {
+            console.error(`Error ${voteType}ing meme:`, err);
+            setError(`Failed to record ${voteType}. Please try again.`);
+            setMemes(originalMemes); // Revert on error
+             if (selectedMeme?.id === memeId) { // Revert modal state too
+                const originalMemeInModal = originalMemes.find(m => m.id === memeId);
+                if(originalMemeInModal) setSelectedMeme(originalMemeInModal);
+             }
+        }
+    }, [isAuthenticated, memes, selectedMeme, axiosInstance]);
 
-        try { await axiosInstance.post(`/api/memes/${memeId}/${voteType}`); console.log(`Vote ${voteType} registered for ${memeId}`); }
-        catch (error) { console.error(`Error ${voteType}ing meme ${memeId}:`, error); alert(`Failed vote.`); if (wasInRows) setRowsData(originalRowsData); if (wasInSearchResults) setSearchResults(originalSearchResults); if (originalSelectedMeme && selectedMeme?.id === memeId) setSelectedMeme(originalSelectedMeme); }
-    }, [isAuthenticated, selectedMeme, searchResults, rowsData, axiosInstance]);
 
-     const formatTagTitle = (tag) => tag.split(/[-_]/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    const handleFavoriteToggle = useCallback(async (memeId) => {
+        if (!isAuthenticated || loadingFavorites) return;
+        const currentlyFavorite = isFavorite(memeId);
+        const action = currentlyFavorite ? removeFavorite : addFavorite;
+        await action(memeId);
+        // No need to manually update meme state here, AuthContext handles favoriteIds
+    }, [isAuthenticated, loadingFavorites, isFavorite, addFavorite, removeFavorite]);
 
-    const showRows = !searchTerm && !loadingRows && !rowsError && Object.keys(rowsData).length > 0;
-    const showSearchResults = searchTerm;
-    const showNoTagsMessage = !searchTerm && !loadingRows && !rowsError && Object.keys(rowsData).length === 0;
+
+    const openModal = (meme) => {
+        setSelectedMeme(meme);
+        setIsModalOpen(true);
+        recordView(meme.id); // Record view when modal opens
+    };
+
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setSelectedMeme(null);
+    };
+
+    // --- Search Control Handlers ---
+    const handleFilterChange = (newType) => {
+        const query = searchParams.get('search') || '';
+        const sort = searchParams.get('sort') || 'newest';
+        fetchMemes(1, query, newType, sort); // Reset to page 1 on filter change
+    };
+
+    const handleSortChange = (newSort) => {
+        const query = searchParams.get('search') || '';
+        const type = searchParams.get('type') || '';
+        fetchMemes(1, query, type, newSort); // Reset to page 1 on sort change
+    };
+
 
     return (
-        <>
-             {!searchTerm && !loadingFeatured && featuredMeme && <HeroBanner featuredMeme={featuredMeme} onPlayClick={openModal} onFavoriteToggle={handleFavoriteToggle}/>}
-             {(loadingFeatured || (loadingRows && !searchTerm) || (loadingSearch && searchTerm)) && <div className="loading-row" style={{ minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>Loading Content...</div>}
-             {!searchTerm && rowsError && <div className="error-message" style={{ padding: '50px 5%', textAlign: 'center' }}>{rowsError}</div>}
-             {searchTerm && searchError && <div className="error-message" style={{ padding: '50px 5%', textAlign: 'center' }}>{searchError}</div>}
-
-            {searchTerm && ( <SearchControls currentFilterType={filterType} currentSortBy={sortBy} onFilterChange={handleFilterChange} onSortChange={handleSortChange}/> )}
-
-            {showRows && (
-                <div className="meme-rows-wrapper">
-                    {memeRowsConfig.map(config => {
-                        const rowMemes = rowsData[config.tag] || [];
-                        // Render row only if currently loading OR if loading is done and it has memes
-                        if (loadingRows || rowMemes.length > 0) {
-                           return ( <MemeRow key={config.tag} title={formatTagTitle(config.tag)} memes={rowMemes} isLoading={loadingRows} onMemeClick={openModal} onFavoriteToggle={handleFavoriteToggle} /> );
-                        }
-                        return null; // Don't render empty rows after loading
-                    })}
-                </div>
+        <div className="home-page">
+            {!isSearchActive && featuredMeme && (
+                <HeroBanner
+                    featuredMeme={featuredMeme}
+                    onPlayClick={openModal}
+                    onFavoriteToggle={handleFavoriteToggle}
+                />
             )}
 
-            {showSearchResults && !loadingSearch && !searchError && (
-                 <div className="search-results-container" style={{ padding: '0 5%' }}>
-                    <h3>Search Results for "{searchTerm}"</h3>
-                    <MemeGrid memes={searchResults} loading={false} error={null} onMemeClick={openModal} onVote={handleVote} onFavoriteToggle={handleFavoriteToggle} />
-                    {searchResults.length === 0 && <div className="info-message" style={{ padding: '50px 0'}}>No memes found matching filters.</div>}
-                </div>
+            {/* Conditionally render SearchControls only when search is active? Or always? Let's show always */}
+            <SearchControls
+                currentFilterType={initialFilterType}
+                currentSortBy={initialSortBy}
+                onFilterChange={handleFilterChange}
+                onSortChange={handleSortChange}
+            />
+
+            {/* Conditionally render Rows or Grid */}
+            {isSearchActive ? (
+                 <MemeGrid
+                    memes={memes}
+                    loading={loading}
+                    error={error}
+                    onMemeClick={openModal}
+                    onVote={handleVote}
+                    onFavoriteToggle={handleFavoriteToggle}
+                 />
+            ) : (
+                <>
+                    {/* Render rows for popular tags */}
+                    {!loadingTags && popularTags.map(tagInfo => (
+                        <MemeRow
+                            key={tagInfo.tag}
+                            title={`Popular in "${tagInfo.tag}"`}
+                            memes={tagMemes[tagInfo.tag] || []}
+                            isLoading={loadingTagMemes[tagInfo.tag] ?? true} // Show loading until fetched
+                            onMemeClick={openModal}
+                            // onVote={handleVote} // Voting only in modal? Keep consistent
+                            onFavoriteToggle={handleFavoriteToggle}
+                        />
+                    ))}
+
+                     {/* Optional: Fallback Grid for general memes if no tags or after tags */}
+                     {/* You might want a dedicated "Browse All" grid instead of mixing */}
+                     <div className="browse-all-section">
+                        <h2>Browse All</h2>
+                        <MemeGrid
+                            memes={memes} // Show the main paginated list here
+                            loading={loading} // Use the main loading state
+                            error={error}   // Use the main error state
+                            onMemeClick={openModal}
+                            onVote={handleVote} // Allow voting here too
+                            onFavoriteToggle={handleFavoriteToggle}
+                        />
+                         <PaginationControls
+                            currentPage={pagination.currentPage}
+                            totalPages={pagination.totalPages}
+                            onPageChange={handlePageChange}
+                        />
+                     </div>
+                </>
             )}
 
-            {showNoTagsMessage && ( <div className="info-message" style={{ padding: '50px 0', textAlign: 'center' }}>Could not find any memes for categories.</div> )}
-
-            {isModalOpen && ( <MemeDetailModal meme={selectedMeme} onClose={closeModal} onVote={handleVote} onFavoriteToggle={handleFavoriteToggle}/> )}
-        </>
+            {isModalOpen && selectedMeme && (
+                <MemeDetailModal
+                    meme={selectedMeme}
+                    onClose={closeModal}
+                    onVote={handleVote}
+                    onFavoriteToggle={handleFavoriteToggle}
+                />
+            )}
+        </div>
     );
 }
 

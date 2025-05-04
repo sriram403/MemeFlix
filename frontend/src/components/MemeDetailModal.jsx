@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 const MEDIA_BASE_URL = 'http://localhost:3001/media';
 
 function MemeDetailModal({ meme, onClose, onVote, onFavoriteToggle }) {
+  console.log('Meme prop received by modal:', meme);
   const { isAuthenticated, isFavorite, loadingFavorites, recordView } = useAuth();
 
   useEffect(() => {
