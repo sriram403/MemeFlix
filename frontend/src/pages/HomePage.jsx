@@ -4,8 +4,6 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import MemeRow from '../components/MemeRow';
 import MemeDetailModal from '../components/MemeDetailModal';
 import HeroBanner from '../components/HeroBanner';
-// import MemeGrid from '../components/MemeGrid'; // No longer needed here
-// import PaginationControls from '../components/PaginationControls'; // No longer needed here
 import SearchControls from '../components/SearchControls';
 import { useAuth, axiosInstance } from '../contexts/AuthContext';
 import './HomePage.css'; // Keep general HomePage styles
@@ -31,10 +29,9 @@ function HomePage() {
     const [searchParams] = useSearchParams(); // Use searchParams only for reading initial query
 
     // --- Search & Filter State (Only used for SearchControls rendering) ---
-    const initialSearchQuery = searchParams.get('search') || '';
+    // Read initial params just to display them consistently if user lands here with params
     const initialFilterType = searchParams.get('type') || '';
     const initialSortBy = searchParams.get('sort') || 'newest';
-    // No need for isSearchActive state here anymore
 
     // --- Fetching Logic ---
 
@@ -58,13 +55,13 @@ function HomePage() {
     useEffect(() => {
         const fetchTags = async () => {
             setLoadingTags(true);
-            setError(null); // Clear previous errors
+            // setError(null); // Don't clear error from featured fetch if it happened
             try {
                 const response = await axiosInstance.get(`${API_BASE_URL}/api/tags/popular`, { params: { limit: 7 } }); // Fetch top 7 tags
                 setPopularTags(response.data?.popularTags || []);
             } catch (err) {
                 console.error("Error fetching popular tags:", err);
-                setError("Could not load tag categories.");
+                setError(prev => prev || "Could not load tag categories."); // Keep existing error if any
                 setPopularTags([]);
             } finally {
                 setLoadingTags(false);
@@ -87,7 +84,7 @@ function HomePage() {
                     })
                     .catch(err => {
                         console.error(`Error fetching memes for tag "${tagName}":`, err);
-                        setTagMemes(prev => ({ ...prev, [tagName]: [] }));
+                        setTagMemes(prev => ({ ...prev, [tagName]: [] })); // Set empty on error for this tag
                     })
                     .finally(() => {
                         setLoadingTagMemes(prev => ({ ...prev, [tagName]: false }));
@@ -98,7 +95,7 @@ function HomePage() {
 
     // --- Event Handlers ---
 
-    // Modal Handlers
+    // Modal Handlers (Unchanged)
     const openModal = (meme) => {
         setSelectedMeme(meme);
         setIsModalOpen(true);
@@ -109,13 +106,12 @@ function HomePage() {
         setSelectedMeme(null);
     };
 
-    // Voting Handler (now only relevant for the modal)
+    // Voting Handler (Unchanged - only for modal)
      const handleVote = useCallback(async (memeId, voteType) => {
         if (!isAuthenticated) {
             alert("Please log in to vote.");
             return;
         }
-        // Optimistic update only for the modal state
         if (selectedMeme?.id === memeId) {
              const originalSelectedMeme = {...selectedMeme};
              setSelectedMeme(prev => ({
@@ -123,16 +119,14 @@ function HomePage() {
                  upvotes: voteType === 'upvote' ? (prev.upvotes ?? 0) + 1 : prev.upvotes,
                  downvotes: voteType === 'downvote' ? (prev.downvotes ?? 0) + 1 : prev.downvotes,
              }));
-
              try {
                  await axiosInstance.post(`${API_BASE_URL}/api/memes/${memeId}/${voteType}`);
              } catch (err) {
                  console.error(`Error ${voteType}ing meme:`, err);
                  alert(`Failed to record ${voteType}. Please try again.`);
-                 setSelectedMeme(originalSelectedMeme); // Revert modal state on error
+                 setSelectedMeme(originalSelectedMeme);
              }
         } else {
-            // If vote comes from somewhere else (it shouldn't now), just send API call
              try {
                  await axiosInstance.post(`${API_BASE_URL}/api/memes/${memeId}/${voteType}`);
              } catch (err) {
@@ -140,21 +134,16 @@ function HomePage() {
                  alert(`Failed to record ${voteType}. Please try again.`);
              }
         }
-    }, [isAuthenticated, selectedMeme, axiosInstance]); // Only depends on modal state now
+    }, [isAuthenticated, selectedMeme, axiosInstance]);
 
 
-    // Favorite Handler (relevant for Hero Banner and Modal)
+    // Favorite Handler (Unchanged - for Hero and Modal)
     const handleFavoriteToggle = useCallback(async (memeId) => {
         if (!isAuthenticated || loadingFavorites) return;
         const currentlyFavorite = isFavorite(memeId);
         const action = currentlyFavorite ? removeFavorite : addFavorite;
-        const success = await action(memeId);
-        // Update selectedMeme state if the favorited item is in the modal
-        if (success && selectedMeme?.id === memeId) {
-             // No direct state update needed, rely on isFavorite re-check
-             // Force re-render slightly if needed? Usually context updates handle it.
-        }
-    }, [isAuthenticated, loadingFavorites, isFavorite, addFavorite, removeFavorite, selectedMeme?.id]);
+        await action(memeId);
+    }, [isAuthenticated, loadingFavorites, isFavorite, addFavorite, removeFavorite]);
 
     // --- Search Control Handlers (Redirect to Browse Page) ---
     const handleSearchRedirect = (params) => {
@@ -169,16 +158,19 @@ function HomePage() {
     const handleSortChange = (newSort) => {
         handleSearchRedirect({ type: initialFilterType, sort: newSort });
     };
+    // No handleTagChange needed for HomePage
 
     // --- Render Logic ---
 
-    // Display general loading/error for tags
-    if (loadingTags) {
-        return <div className="loading-page">Loading categories...</div>; // Add a specific class if needed
+    // Show error only if nothing could be loaded at all
+    if (error && !featuredMeme && popularTags.length === 0 && !loadingTags) {
+        return <div className="error-page">{error}</div>;
     }
-    if (error) {
-        return <div className="error-page">{error}</div>; // Add a specific class if needed
+    // Show initial loading only if nothing is ready yet
+    if (!featuredMeme && loadingTags) {
+         return <div className="loading-page">Loading Memeflix...</div>;
     }
+
 
     return (
         <div className="home-page">
@@ -190,16 +182,20 @@ function HomePage() {
                 />
             )}
 
-            {/* Keep SearchControls, but handlers redirect */}
+            {/* Pass showTagFilter={false} */}
             <SearchControls
                 currentFilterType={initialFilterType}
                 currentSortBy={initialSortBy}
                 onFilterChange={handleFilterChange}
                 onSortChange={handleSortChange}
+                showTagFilter={false} // <-- Hide tag filter on homepage
             />
 
+            {/* Show loading indicator for tags specifically if needed */}
+            {loadingTags && <div className="loading-page">Loading categories...</div>}
+
             {/* Render rows for popular tags */}
-            {popularTags.map(tagInfo => (
+            {!loadingTags && popularTags.map(tagInfo => (
                 <MemeRow
                     key={tagInfo.tag}
                     title={`Popular in "${tagInfo.tag}"`}
@@ -207,18 +203,19 @@ function HomePage() {
                     isLoading={loadingTagMemes[tagInfo.tag] ?? true}
                     onMemeClick={openModal}
                     onFavoriteToggle={handleFavoriteToggle}
-                    // Voting is handled only within the modal now
                 />
             ))}
 
-            {/* No Browse All Grid or Pagination Here Anymore */}
+            {/* Show specific error if tag loading failed but hero might have loaded */}
+             {!loadingTags && error && <div className="error-message">{error}</div>}
+
 
             {isModalOpen && selectedMeme && (
                 <MemeDetailModal
                     meme={selectedMeme}
                     onClose={closeModal}
-                    onVote={handleVote} // Pass vote handler to modal
-                    onFavoriteToggle={handleFavoriteToggle} // Pass fav handler to modal
+                    onVote={handleVote}
+                    onFavoriteToggle={handleFavoriteToggle}
                 />
             )}
         </div>

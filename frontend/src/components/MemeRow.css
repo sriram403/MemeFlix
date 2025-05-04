@@ -1,8 +1,8 @@
 /* frontend/src/components/MemeRow.css */
 .meme-row-container {
     margin-bottom: 30px;
-    padding: 0 5%;
-    position: relative; /* Needed for absolute positioning of arrows */
+    padding: 0; /* Remove horizontal padding here */
+    position: relative;
 }
 
 .meme-row-title {
@@ -10,33 +10,37 @@
     margin-bottom: 15px;
     font-size: 1.4em;
     font-weight: 500;
+    padding: 0 5%; /* Add padding here to align title */
 }
 
-/* NEW: Wrapper to contain row and arrows */
+/* Wrapper remains relative for positioning arrows */
 .meme-row-wrapper {
     position: relative;
+    padding: 0 5%; /* Add horizontal padding to the wrapper */
 }
 
 .meme-row {
     display: flex;
-    overflow-x: auto; /* Still needs to be scrollable */
+    overflow-x: auto;
     overflow-y: hidden;
     padding-bottom: 20px; /* Space for potential scrollbar ghost and hover */
+    /* No horizontal padding here anymore */
     gap: 10px;
-    /* Important: Allow smooth scrolling */
     scroll-behavior: smooth;
-    /* Hide scrollbar visually */
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none;  /* IE */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
 .meme-row::-webkit-scrollbar {
-    display: none; /* Chrome, Safari */
+    display: none;
 }
 
 .meme-row .meme-card {
     flex-shrink: 0;
     width: 250px;
     margin: 0;
+    /* Make sure cards are interactable */
+    position: relative;
+    z-index: 1;
 }
 
 .loading-row, .error-row {
@@ -46,55 +50,52 @@
     align-items: center;
     justify-content: center;
     font-style: italic;
+    padding: 0 5%; /* Add padding if needed */
 }
 
-/* --- NEW: Scroll Arrow Styles --- */
+/* --- Scroll Arrow Styles --- */
 .scroll-arrow {
     position: absolute;
-    top: 50%;
-    transform: translateY(-50%); /* Center vertically */
-    z-index: 10;
-    background-color: rgba(20, 20, 20, 0.6); /* Semi-transparent background */
+    top: 45%; /* Adjust vertical position slightly */
+    transform: translateY(-50%);
+    z-index: 5; /* Lower than cards by default */
+    background-color: rgba(20, 20, 20, 0.6);
     color: white;
     border: none;
     border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    font-size: 2em; /* Make arrow bigger */
-    line-height: 35px; /* Adjust line-height to center arrow vertically */
+    width: 45px; /* Slightly larger */
+    height: 45px;
+    font-size: 2.2em;
+    line-height: 42px; /* Adjust line-height */
     text-align: center;
     cursor: pointer;
-    opacity: 0; /* Hidden by default */
+    opacity: 0;
     transition: opacity 0.3s ease, background-color 0.2s ease;
-    padding: 0; /* Remove default padding */
+    padding: 0;
+    pointer-events: none; /* Block interaction by default */
 }
 
-/* Show arrows on row hover */
+/* Show arrows and make them clickable ONLY when wrapper is hovered */
 .meme-row-wrapper:hover .scroll-arrow {
     opacity: 1;
+    pointer-events: auto; /* Enable clicks ONLY on the arrow */
+    z-index: 15; /* Bring arrow above cards ONLY when hovered */
 }
 
 .scroll-arrow:hover {
-    background-color: rgba(20, 20, 20, 0.9); /* Darker on hover */
+    background-color: rgba(20, 20, 20, 0.9);
 }
 
 .scroll-arrow.left-arrow {
-    left: -15px; /* Position just outside the padding */
+    /* Position just inside the wrapper's padding */
+    left: 10px;
 }
 
 .scroll-arrow.right-arrow {
-    right: -15px; /* Position just outside the padding */
+     /* Position just inside the wrapper's padding */
+    right: 10px;
 }
 
-/* Hide arrows completely if state dictates (redundant with opacity 0, but safe) */
-.scroll-arrow:disabled { /* Using disabled state based on showXArrow state */
+.scroll-arrow:disabled {
     display: none;
 }
-
-/* Modifier classes if we directly use state (alternative to :disabled) */
-/*
-.scroll-arrow.hidden {
-    opacity: 0;
-    pointer-events: none;
-}
-*/
