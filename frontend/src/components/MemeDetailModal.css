@@ -8,7 +8,7 @@
 
 .modal-content {
   background-image: linear-gradient(145deg, #2a2a2a 0%, #1f1f1f 100%); padding: 0; border-radius: 8px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6); position: relative; max-width: 85%; height: 85vh;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6); position: relative; max-width: 85%; height: 85vh; /* Keep overall modal size */
   overflow: hidden; cursor: default; display: flex; flex-direction: column; border: 1px solid var(--border-color);
   transform: scale(0.95); animation: scaleUp 0.3s 0.1s ease forwards;
 }
@@ -22,77 +22,158 @@
 }
 .modal-close-button:hover { background-color: rgba(0, 0, 0, 0.8); color: var(--text-light); transform: rotate(90deg); }
 
+/* --- Media Section Layout --- */
 .modal-media {
-  width: 100%; margin: 0; display: flex; justify-content: center; align-items: center;
-  background-color: #000; flex-shrink: 0; position: relative; max-height: 70%;
+  width: 100%;
+  height: 65%; /* Use a fixed percentage of the modal height */
+  min-height: 300px; /* Prevent it from becoming too small */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #000; /* Background for letterboxing */
+  flex-shrink: 0; /* Don't allow shrinking */
+  position: relative; /* Ensure it's a positioning context if needed */
+  overflow: hidden; /* Hide any potential overflow */
 }
-.modal-media img, .modal-media video { display: block; max-width: 100%; max-height: 100%; height: auto; width: auto; object-fit: contain; }
 
-.modal-info { padding: 20px 30px 25px 30px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; }
+/* Force visibility and ensure dimensions */
+.modal-media img, .modal-media video {
+  display: block; /* Use block instead of inline */
+  /* Ensure it TRIES to take up space */
+  width: 100%;
+  height: 100%;
+  max-width: 100%;  /* Still constrain within parent */
+  max-height: 100%; /* Still constrain within parent */
+  object-fit: contain; /* Maintain aspect ratio */
+  /* Force visibility */
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 1; /* Ensure it's not hidden behind the background */
+}
+
+/* Placeholder style */
+.media-placeholder {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+
+/* --- Info Section Layout --- */
+.modal-info {
+  /* Take remaining space */
+  flex-grow: 1;
+  /* Allow vertical scrolling ONLY if content overflows */
+  overflow-y: auto;
+  padding: 20px 30px 25px 30px;
+  display: flex;
+  flex-direction: column; /* Stack children vertically */
+  /* Important: Prevent flex items from shrinking */
+  min-height: 0; /* Fix potential flexbox overflow issue in some browsers */
+}
 
 .modal-info h2 {
   color: var(--text-light); margin: 0 0 15px 0; font-size: 1.5em; font-weight: 500; text-align: left;
+  flex-shrink: 0; /* Prevent title shrinking */
 }
 
 .modal-description {
-    color: var(--text-primary); font-size: 0.95em; line-height: 1.5; margin-top: 0; margin-bottom: 15px;
+    color: var(--text-primary); font-size: 0.95em; line-height: 1.5; margin-bottom: 15px;
+    flex-shrink: 0; /* Prevent description shrinking */
 }
 
-.modal-tags-actions-row {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-top: 10px; margin-bottom: 10px; gap: 15px; flex-wrap: wrap;
+/* --- Tags Section Layout --- */
+.modal-tags-section {
+    margin-bottom: 15px; /* Space below tags section */
+    flex-shrink: 0; /* Prevent tags section shrinking */
 }
-.modal-tags { color: var(--text-secondary); font-style: italic; margin: 0; font-size: 0.9em; line-height: 1.4; flex-grow: 1; }
-
-/* --- UPDATED Styles for Inline Favorite Button --- */
-.modal-fav-button-inline {
-    position: static; /* Keep static */
-    /* Increase Size */
-    width: 40px; /* Larger width */
-    height: 40px; /* Larger height */
-    font-size: 1.6em; /* Larger emoji */
-    /* Keep other base styles from .favorite-button */
-    background: rgba(50, 50, 50, 0.7); /* Slightly more visible background */
-    border: 1px solid var(--text-secondary);
-    color: var(--text-secondary); /* Default color (for outline heart) */
-    border-radius: 50%; /* Keep circular */
+.modal-tags-container {
+    display: flex;
+    flex-wrap: wrap; /* Allow tags to wrap */
+    align-items: baseline; /* Align label and tags nicely */
+    gap: 8px; /* Gap between label and tags, and between tags */
+    margin-bottom: 8px; /* Space between current tags and related tags */
+}
+.tags-label {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    font-weight: 500;
+    margin-right: 5px; /* Ensure space after label */
+}
+.tag-button {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 0.85em;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+.tag-button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: var(--text-light);
+    border-color: var(--text-secondary);
+}
+.related-tag {
+    /* Slightly different style for related? Optional */
+    /* background-color: rgba(229, 9, 20, 0.1); */
+    /* border-color: rgba(229, 9, 20, 0.3); */
+}
+.related-tags-loading {
+    font-size: 0.85em;
+    color: var(--text-secondary);
+    font-style: italic;
+    padding: 5px 0;
+}
+
+/* --- Favorite Button Layout --- */
+.modal-fav-button-container {
+    /* Position this separately if needed, or keep it in flow */
+    margin-bottom: 15px; /* Space below favorite button */
+    display: flex; /* If you want to align it */
+    justify-content: flex-start; /* Or center, flex-end */
     flex-shrink: 0;
-    margin: 0; padding: 0;
-    display: flex; /* Ensure flex properties for centering */
-    justify-content: center;
-    align-items: center;
-    line-height: 0; /* Important for centering emoji */
-    box-shadow: 0 1px 3px rgba(0,0,0,0.4); /* Subtle shadow */
+}
+/* Reference existing .favorite-button styles */
+.modal-fav-button-inline {
+    /* Base styles are inherited or defined in FavoriteButton.css */
+    /* Specific overrides for modal context if needed */
+    width: 40px;
+    height: 40px;
+    font-size: 1.6em;
+    background: rgba(50, 50, 50, 0.7);
+    border: 1px solid var(--text-secondary);
+    color: var(--text-secondary);
 }
 .modal-fav-button-inline.is-favorite {
-     color: var(--accent-red); /* Red emoji when favorite */
-     border-color: var(--accent-red); /* Optional: Red border */
-     background: rgba(60, 30, 30, 0.7); /* Optional: Slight red tint background */
+     color: var(--accent-red);
+     border-color: var(--accent-red);
+     background: rgba(60, 30, 30, 0.7);
 }
 .modal-fav-button-inline:hover:not(:disabled) {
-     transform: scale(1.1); /* Keep scale effect */
-     border-color: var(--text-light); /* White border on hover */
-     background: rgba(80, 80, 80, 0.8); /* Darker background on hover */
-     color: var(--text-light); /* White outline heart on hover */
+     transform: scale(1.1);
+     border-color: var(--text-light);
+     background: rgba(80, 80, 80, 0.8);
+     color: var(--text-light);
      box-shadow: 0 3px 6px rgba(0,0,0,0.5);
 }
 .modal-fav-button-inline.is-favorite:hover:not(:disabled) {
-    color: var(--text-light); /* White heart on hover */
-    background-color: var(--accent-red); /* Solid red background on hover */
+    color: var(--text-light);
+    background-color: var(--accent-red);
     border-color: var(--accent-red);
-    box-shadow: 0 0 10px 2px var(--accent-red-glow); /* Add glow */
+    box-shadow: 0 0 10px 2px var(--accent-red-glow);
 }
-.modal-fav-button-inline:disabled { /* Copied from base .favorite-button disabled */
+.modal-fav-button-inline:disabled {
     cursor: not-allowed; opacity: 0.6; box-shadow: none; transform: none;
 }
-/* --- End Inline Fav Button Styles --- */
 
 
+/* --- Vote Actions Layout --- */
 .modal-actions {
   display: flex; justify-content: center; align-items: center; gap: 25px;
-  margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border-color);
+  margin-top: auto; /* Push actions to the bottom of the info section */
+  padding-top: 20px; border-top: 1px solid var(--border-color);
+  flex-shrink: 0; /* Prevent actions shrinking */
 }
 .modal-actions .vote-button {
   background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.8em;
@@ -105,6 +186,8 @@
 .modal-actions .vote-count { font-size: 0.7em; color: var(--text-secondary); }
 .modal-actions .score { font-size: 1em; color: var(--text-light); font-weight: bold; }
 
+
+/* Scrollbar Styling (Unchanged) */
 .modal-info::-webkit-scrollbar { width: 8px; }
 .modal-info::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); border-radius: 4px; }
 .modal-info::-webkit-scrollbar-thumb { background-color: var(--accent-red); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
