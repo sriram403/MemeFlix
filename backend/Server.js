@@ -58,7 +58,7 @@ function allDb(sql, params = []) {
 }
 
 
-// --- Auth Routes (Unchanged) ---
+// --- Auth Routes ---
 app.post('/api/auth/register', async (req, res) => {
   const { username, email, password } = req.body;
   if (!username || !email || !password) return res.status(400).json({ error: 'Missing required fields.' });
@@ -144,33 +144,53 @@ app.get('/api/memes', async (req, res) => {
   }
 });
 
+// --- NEW: Random Meme Endpoint ---
+app.get('/api/memes/random', async (req, res) => {
+    const sql = `
+        SELECT ${baseMemeSelectFields}
+        ${baseMemeJoins}
+        /* Ensure we only select memes that are actually in the memes table */
+        WHERE m.id IS NOT NULL
+        GROUP BY m.id
+        ORDER BY RANDOM()
+        LIMIT 1
+    `;
+    try {
+        const randomMeme = await getDb(sql);
+        if (!randomMeme) {
+            return res.status(404).json({ error: 'No memes found to select randomly.' });
+        }
+        res.status(200).json({ meme: randomMeme });
+    } catch (err) {
+        console.error("DB fetch random meme error:", err.message);
+        res.status(500).json({ error: 'Failed to retrieve a random meme.' });
+    }
+});
+
+
 app.get('/api/memes/search', async (req, res) => {
     const query = req.query.q || '';
     const filterType = req.query.type || '';
     const sortBy = req.query.sort || 'newest';
-    const filterTag = req.query.tag || ''; // Read tag from query param
+    const filterTag = req.query.tag || '';
 
     let whereClauses = [];
     let params = [];
-    let joins = baseMemeJoins; // Start with base joins
+    let joins = baseMemeJoins;
 
-    // Text search condition
     if (query) {
         whereClauses.push(`(lower(m.title) LIKE ? OR lower(m.description) LIKE ?)`);
         const searchTerm = `%${query.toLowerCase()}%`;
         params.push(searchTerm, searchTerm);
     }
 
-    // Type filter condition
     const validTypes = ['image', 'gif', 'video'];
     if (filterType && validTypes.includes(filterType.toLowerCase())) {
         whereClauses.push(`lower(m.type) = ?`);
         params.push(filterType.toLowerCase());
     }
 
-     // Tag filter condition
     if (filterTag) {
-        // Need INNER JOIN for filtering specifically by tag
         joins = `
             FROM memes m
             INNER JOIN meme_tags mt_filter ON m.id = mt_filter.meme_id
@@ -182,7 +202,7 @@ app.get('/api/memes/search', async (req, res) => {
         params.push(filterTag);
     }
 
-    const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+    const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : 'WHERE m.id IS NOT NULL'; // Ensure WHERE exists
 
     let orderBySql = 'ORDER BY ';
     switch (sortBy.toLowerCase()) {
@@ -218,7 +238,7 @@ app.get('/api/tags/popular', async (req, res) => {
         FROM tags t
         JOIN meme_tags mt ON t.tag_id = mt.tag_id
         GROUP BY t.tag_id
-        ORDER BY count DESC, t.name ASC /* Add secondary sort by name */
+        ORDER BY count DESC, t.name ASC
         LIMIT ?
     `;
     try {
@@ -229,19 +249,16 @@ app.get('/api/tags/popular', async (req, res) => {
         return res.status(500).json({ error: 'Database error fetching tags.' });
     }
 });
-
-// --- NEW: Get All Tags Route ---
 app.get('/api/tags/all', async (req, res) => {
     const sql = `SELECT name FROM tags ORDER BY name ASC`;
     try {
         const tags = await allDb(sql);
-        res.status(200).json({ tags: tags.map(t => t.name) || [] }); // Return just an array of names
+        res.status(200).json({ tags: tags.map(t => t.name) || [] });
     } catch (err) {
         console.error("Error fetching all tags:", err.message);
         return res.status(500).json({ error: 'Database error fetching all tags.' });
     }
 });
-
 app.get('/api/memes/by-tag/:tag', async (req, res) => {
     const tag = req.params.tag;
     const limit = parseInt(req.query.limit || '10', 10);
@@ -271,7 +288,7 @@ app.get('/api/memes/by-tag/:tag', async (req, res) => {
 });
 
 
-// --- Vote Routes (Unchanged) ---
+// --- Vote Routes ---
 app.post('/api/memes/:id/upvote', async (req, res) => {
   const memeId = parseInt(req.params.id, 10); if (isNaN(memeId)) return res.status(400).json({ error: 'Invalid ID.' });
   try {
@@ -295,7 +312,7 @@ app.post('/api/memes/:id/downvote', async (req, res) => {
   }
 });
 
-// --- Favorites Routes (Unchanged) ---
+// --- Favorites Routes ---
 app.get('/api/favorites/ids', authenticateToken, async (req, res) => {
     try {
         const rows = await allDb("SELECT meme_id FROM user_favorites WHERE user_id = ?", [req.user.id]);
@@ -344,7 +361,7 @@ app.delete('/api/favorites/:memeId', authenticateToken, async (req, res) => {
     }
 });
 
-// --- History Routes (Unchanged) ---
+// --- History Routes ---
 app.post('/api/history/:memeId', authenticateToken, async (req, res) => {
     const memeId = parseInt(req.params.memeId, 10); if (isNaN(memeId)) return res.status(400).json({ error: 'Invalid ID.' });
     try {
@@ -388,36 +405,38 @@ app.get('/api/history', authenticateToken, async (req, res) => {
 });
 
 
-// --- Media Route (Unchanged) ---
+// --- Media Route ---
 app.get('/media/:filename', (req, res) => {
   const filename = req.params.filename;
+  // Basic security check: prevent directory traversal
+  if (filename.includes('..') || filename.includes('/')) {
+      return res.status(400).json({ error: 'Invalid filename.' });
+  }
   const filePath = path.join(__dirname, '../meme_files', filename);
+
   res.sendFile(filePath, (err) => {
       if (err) {
           if (!res.headersSent && !res.writableEnded) {
               if (err.code === "ENOENT") {
-                  // Don't log 404s as errors unless debugging
-                  // console.error(`File not found: ${filename}`);
                   res.status(404).json({ error: 'File not found.' });
               } else {
                   console.error(`Error sending file ${filename}:`, err);
                   res.status(500).json({ error: 'Failed to send file.' });
               }
           } else {
-               // Error occurred after stream started
                console.error(`Error sending file ${filename} (headers sent):`, err);
           }
       }
   });
 });
 
-// --- Root Route (Unchanged) ---
+// --- Root Route ---
 app.get('/', (req, res) => res.send('Hello World from Memeflix Backend!'));
 
-// --- Start Server (Unchanged) ---
+// --- Start Server ---
 app.listen(PORT, () => console.log(`Memeflix backend server running on http://localhost:${PORT}`));
 
-// --- Graceful Shutdown (Unchanged) ---
+// --- Graceful Shutdown ---
 process.on('SIGINT', () => {
   console.log("SIGINT received. Closing database connection...");
   db.close((err) => {

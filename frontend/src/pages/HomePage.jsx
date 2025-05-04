@@ -6,18 +6,19 @@ import MemeDetailModal from '../components/MemeDetailModal';
 import HeroBanner from '../components/HeroBanner';
 import SearchControls from '../components/SearchControls';
 import { useAuth, axiosInstance } from '../contexts/AuthContext';
-import './HomePage.css'; // Keep general HomePage styles
+import './HomePage.css';
 
 const API_BASE_URL = 'http://localhost:3001';
 
 function HomePage() {
     // State for data specific to HomePage (Hero, Tags, Tag Memes)
     const [featuredMeme, setFeaturedMeme] = useState(null);
+    const [loadingFeatured, setLoadingFeatured] = useState(true); // Loading state for hero
     const [popularTags, setPopularTags] = useState([]);
     const [tagMemes, setTagMemes] = useState({});
     const [loadingTags, setLoadingTags] = useState(true);
     const [loadingTagMemes, setLoadingTagMemes] = useState({});
-    const [error, setError] = useState(null); // Keep general error state for fetch issues
+    const [error, setError] = useState(null);
 
     // State for Modal
     const [selectedMeme, setSelectedMeme] = useState(null);
@@ -25,43 +26,59 @@ function HomePage() {
 
     // Hooks
     const { isAuthenticated, addFavorite, removeFavorite, isFavorite, loadingFavorites, recordView } = useAuth();
-    const navigate = useNavigate(); // Use navigate for search redirection
-    const [searchParams] = useSearchParams(); // Use searchParams only for reading initial query
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
-    // --- Search & Filter State (Only used for SearchControls rendering) ---
-    // Read initial params just to display them consistently if user lands here with params
     const initialFilterType = searchParams.get('type') || '';
     const initialSortBy = searchParams.get('sort') || 'newest';
 
     // --- Fetching Logic ---
 
-    // Fetch Featured Meme (run once on mount)
-    useEffect(() => {
-        const fetchFeatured = async () => {
-            try {
-                const response = await axiosInstance.get(`${API_BASE_URL}/api/memes`, { params: { page: 1, limit: 1 } });
-                if (response.data?.memes?.length > 0) {
-                    setFeaturedMeme(response.data.memes[0]);
-                }
-            } catch (err) {
-                console.error("Error fetching featured meme:", err);
-                setError("Could not load featured content."); // Set general error if needed
+    // Fetch Featured Meme (now fetches random) - runs on mount and potentially on navigation
+    const fetchFeatured = useCallback(async () => {
+        setLoadingFeatured(true);
+        // setError(null); // Clear previous specific error? Maybe not if tags failed.
+        try {
+            // *** Use the new random endpoint ***
+            const response = await axiosInstance.get(`${API_BASE_URL}/api/memes/random`);
+            if (response.data?.meme) {
+                setFeaturedMeme(response.data.meme);
+            } else {
+                // Handle case where API returns success but no meme (e.g., empty DB)
+                 setFeaturedMeme(null);
+                 // Optionally set a specific error for this case if desired
+                 // setError("Could not find a meme to feature.");
             }
-        };
+        } catch (err) {
+            console.error("Error fetching featured meme:", err);
+            setError(prev => prev || "Could not load featured content."); // Keep existing error
+            setFeaturedMeme(null);
+        } finally {
+             setLoadingFeatured(false);
+        }
+    }, [axiosInstance]); // Dependency only on axiosInstance
+
+    useEffect(() => {
         fetchFeatured();
-    }, [axiosInstance]);
+    }, [fetchFeatured]); // Run on mount
+
+    // Add another useEffect to refetch when navigating back to this page?
+    // This depends on how React Router re-mounts components.
+    // A simpler way might be to just fetch on initial mount. If you
+    // navigate away and back, it *should* remount and fetch again.
+    // Let's stick with the mount-only fetch for now unless problems arise.
+
 
     // Fetch Popular Tags (run once on mount)
     useEffect(() => {
         const fetchTags = async () => {
             setLoadingTags(true);
-            // setError(null); // Don't clear error from featured fetch if it happened
             try {
-                const response = await axiosInstance.get(`${API_BASE_URL}/api/tags/popular`, { params: { limit: 7 } }); // Fetch top 7 tags
+                const response = await axiosInstance.get(`${API_BASE_URL}/api/tags/popular`, { params: { limit: 7 } });
                 setPopularTags(response.data?.popularTags || []);
             } catch (err) {
                 console.error("Error fetching popular tags:", err);
-                setError(prev => prev || "Could not load tag categories."); // Keep existing error if any
+                setError(prev => prev || "Could not load tag categories.");
                 setPopularTags([]);
             } finally {
                 setLoadingTags(false);
@@ -70,10 +87,9 @@ function HomePage() {
         fetchTags();
     }, [axiosInstance]);
 
-    // Fetch Memes for each Popular Tag
+    // Fetch Memes for each Popular Tag (logic unchanged)
     useEffect(() => {
         if (popularTags.length === 0) return;
-
         popularTags.forEach(tagInfo => {
             const tagName = tagInfo.tag;
             if (!tagMemes[tagName] && !loadingTagMemes[tagName]) {
@@ -84,7 +100,7 @@ function HomePage() {
                     })
                     .catch(err => {
                         console.error(`Error fetching memes for tag "${tagName}":`, err);
-                        setTagMemes(prev => ({ ...prev, [tagName]: [] })); // Set empty on error for this tag
+                        setTagMemes(prev => ({ ...prev, [tagName]: [] }));
                     })
                     .finally(() => {
                         setLoadingTagMemes(prev => ({ ...prev, [tagName]: false }));
@@ -93,9 +109,9 @@ function HomePage() {
         });
     }, [popularTags, axiosInstance, tagMemes, loadingTagMemes]);
 
-    // --- Event Handlers ---
+    // --- Event Handlers (Unchanged) ---
 
-    // Modal Handlers (Unchanged)
+    // Modal Handlers
     const openModal = (meme) => {
         setSelectedMeme(meme);
         setIsModalOpen(true);
@@ -106,89 +122,69 @@ function HomePage() {
         setSelectedMeme(null);
     };
 
-    // Voting Handler (Unchanged - only for modal)
+    // Voting Handler
      const handleVote = useCallback(async (memeId, voteType) => {
-        if (!isAuthenticated) {
-            alert("Please log in to vote.");
-            return;
-        }
+        if (!isAuthenticated) { alert("Please log in to vote."); return; }
         if (selectedMeme?.id === memeId) {
              const originalSelectedMeme = {...selectedMeme};
-             setSelectedMeme(prev => ({
-                 ...prev,
-                 upvotes: voteType === 'upvote' ? (prev.upvotes ?? 0) + 1 : prev.upvotes,
-                 downvotes: voteType === 'downvote' ? (prev.downvotes ?? 0) + 1 : prev.downvotes,
-             }));
-             try {
-                 await axiosInstance.post(`${API_BASE_URL}/api/memes/${memeId}/${voteType}`);
-             } catch (err) {
-                 console.error(`Error ${voteType}ing meme:`, err);
-                 alert(`Failed to record ${voteType}. Please try again.`);
-                 setSelectedMeme(originalSelectedMeme);
-             }
+             setSelectedMeme(prev => ({ ...prev, upvotes: voteType === 'upvote' ? (prev.upvotes ?? 0) + 1 : prev.upvotes, downvotes: voteType === 'downvote' ? (prev.downvotes ?? 0) + 1 : prev.downvotes, }));
+             try { await axiosInstance.post(`${API_BASE_URL}/api/memes/${memeId}/${voteType}`); }
+             catch (err) { console.error(`Error ${voteType}ing meme:`, err); alert(`Failed to record ${voteType}.`); setSelectedMeme(originalSelectedMeme); }
         } else {
-             try {
-                 await axiosInstance.post(`${API_BASE_URL}/api/memes/${memeId}/${voteType}`);
-             } catch (err) {
-                 console.error(`Error ${voteType}ing meme:`, err);
-                 alert(`Failed to record ${voteType}. Please try again.`);
-             }
+             try { await axiosInstance.post(`${API_BASE_URL}/api/memes/${memeId}/${voteType}`); }
+             catch (err) { console.error(`Error ${voteType}ing meme:`, err); alert(`Failed to record ${voteType}.`); }
         }
     }, [isAuthenticated, selectedMeme, axiosInstance]);
 
-
-    // Favorite Handler (Unchanged - for Hero and Modal)
+    // Favorite Handler
     const handleFavoriteToggle = useCallback(async (memeId) => {
         if (!isAuthenticated || loadingFavorites) return;
         const currentlyFavorite = isFavorite(memeId);
         const action = currentlyFavorite ? removeFavorite : addFavorite;
         await action(memeId);
-    }, [isAuthenticated, loadingFavorites, isFavorite, addFavorite, removeFavorite]);
+        // If the featured meme is the one being toggled, force a state update to reflect in HeroBanner button
+        if (featuredMeme?.id === memeId) {
+             setFeaturedMeme(prev => ({...prev})); // Trigger re-render of HeroBanner
+        }
+    }, [isAuthenticated, loadingFavorites, isFavorite, addFavorite, removeFavorite, featuredMeme?.id]);
 
-    // --- Search Control Handlers (Redirect to Browse Page) ---
+    // Search Control Handlers (Unchanged)
     const handleSearchRedirect = (params) => {
         const searchParams = new URLSearchParams(params);
         navigate(`/browse?${searchParams.toString()}`);
     };
-
-    const handleFilterChange = (newType) => {
-        handleSearchRedirect({ type: newType, sort: initialSortBy });
-    };
-
-    const handleSortChange = (newSort) => {
-        handleSearchRedirect({ type: initialFilterType, sort: newSort });
-    };
-    // No handleTagChange needed for HomePage
+    const handleFilterChange = (newType) => { handleSearchRedirect({ type: newType, sort: initialSortBy }); };
+    const handleSortChange = (newSort) => { handleSearchRedirect({ type: initialFilterType, sort: newSort }); };
 
     // --- Render Logic ---
 
-    // Show error only if nothing could be loaded at all
-    if (error && !featuredMeme && popularTags.length === 0 && !loadingTags) {
+    if (error && !featuredMeme && popularTags.length === 0 && !loadingTags && !loadingFeatured) {
         return <div className="error-page">{error}</div>;
     }
-    // Show initial loading only if nothing is ready yet
-    if (!featuredMeme && loadingTags) {
+    if (loadingFeatured || (loadingTags && popularTags.length === 0)) {
          return <div className="loading-page">Loading Memeflix...</div>;
     }
 
-
     return (
         <div className="home-page">
-            {featuredMeme && (
+            {/* Render HeroBanner only if featuredMeme is successfully loaded */}
+            {featuredMeme ? (
                 <HeroBanner
                     featuredMeme={featuredMeme}
                     onPlayClick={openModal}
                     onFavoriteToggle={handleFavoriteToggle}
                 />
+            ) : (
+                // Optional: Placeholder or message if random meme couldn't load but page continues
+                 !loadingFeatured && <div className="info-message">Could not load featured meme.</div>
             )}
 
-            {/* Pass showTagFilter={false} */}
             <SearchControls
                 currentFilterType={initialFilterType}
                 currentSortBy={initialSortBy}
                 onFilterChange={handleFilterChange}
                 onSortChange={handleSortChange}
-                showTagFilter={false} // <-- Hide tag filter on homepage
+                showTagFilter={false}
             />
 
             {/* Show loading indicator for tags specifically if needed */}
@@ -206,7 +202,7 @@ function HomePage() {
                 />
             ))}
 
-            {/* Show specific error if tag loading failed but hero might have loaded */}
+            {/* Show general error if tag loading failed but hero might have loaded */}
              {!loadingTags && error && <div className="error-message">{error}</div>}
 
 
