@@ -20,9 +20,13 @@ axiosInstance.interceptors.request.use(
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [token, setToken] = useState(localStorage.getItem('memeflix_token'));
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true); // Overall auth loading
     const [favoriteIds, setFavoriteIds] = useState(new Set());
     const [loadingFavorites, setLoadingFavorites] = useState(false);
+
+    // --- NEW: State for Viewed Meme IDs ---
+    const [viewedIds, setViewedIds] = useState(new Set());
+    const [loadingViewed, setLoadingViewed] = useState(false); // Separate loading state
 
     const fetchFavoriteIds = useCallback(async () => {
         if (!token) { setFavoriteIds(new Set()); setLoadingFavorites(false); return; }
@@ -30,31 +34,73 @@ export const AuthProvider = ({ children }) => {
         try {
             const response = await axiosInstance.get('/api/favorites/ids');
             setFavoriteIds(new Set(response.data.favoriteMemeIds || []));
-        } catch (error) { console.error("Failed to fetch favorite IDs:", error); }
+        } catch (error) { console.error("Failed to fetch favorite IDs:", error); setFavoriteIds(new Set());} // Clear on error
         finally { setLoadingFavorites(false); }
-    }, [token]);
+    }, [token]); // Depends only on token presence
 
-    const handleLogout = useCallback(() => { setToken(null); }, []);
+    // --- NEW: Fetch Viewed IDs ---
+    const fetchViewedIds = useCallback(async () => {
+        if (!token) { setViewedIds(new Set()); setLoadingViewed(false); return; }
+        setLoadingViewed(true);
+        try {
+            // We fetch the full history and extract IDs.
+            // A dedicated `/api/history/ids` endpoint would be more efficient.
+            const response = await axiosInstance.get('/api/history', { params: { limit: 1000 } }); // Fetch a large limit
+            const ids = (response.data?.memes || []).map(meme => meme.id);
+            setViewedIds(new Set(ids));
+        } catch (error) {
+            console.error("Failed to fetch viewed IDs:", error);
+             setViewedIds(new Set()); // Clear on error
+        } finally {
+             setLoadingViewed(false);
+        }
+    }, [token]); // Depends only on token presence
 
+    // Logout handler
+    const handleLogout = useCallback(() => {
+        setToken(null);
+        setUser(null);
+        setFavoriteIds(new Set());
+        setViewedIds(new Set()); // Clear viewed state on logout
+        localStorage.removeItem('memeflix_token');
+        setLoading(false); // Ensure loading is false after logout
+    }, []); // No dependencies needed
+
+    // Effect to fetch user data, favorites, and viewed status when token changes
     useEffect(() => {
         if (token) {
             localStorage.setItem('memeflix_token', token);
-            setLoading(true);
+            setLoading(true); // Start overall loading
             axiosInstance.get('/api/auth/me')
-                .then(response => { setUser(response.data); fetchFavoriteIds(); })
-                .catch(() => handleLogout())
-                .finally(() => setLoading(false));
+                .then(response => {
+                    setUser(response.data);
+                    // Fetch favorites and viewed IDs *after* user is confirmed
+                    Promise.all([fetchFavoriteIds(), fetchViewedIds()]).finally(() => {
+                        setLoading(false); // Finish overall loading after everything
+                    });
+                })
+                .catch(() => {
+                    // If /me fails, logout
+                    handleLogout();
+                });
         } else {
-            localStorage.removeItem('memeflix_token');
-            setUser(null); setFavoriteIds(new Set()); setLoading(false);
+            // No token, ensure everything is cleared and loading is false
+             handleLogout(); // Use handleLogout to clear everything consistently
         }
-    }, [token, fetchFavoriteIds, handleLogout]);
+    }, [token, fetchFavoriteIds, fetchViewedIds, handleLogout]); // Add fetchViewedIds
 
     const login = async (username, password) => {
         try {
             const response = await axios.post(`${API_BASE_URL}/api/auth/login`, { username, password });
-            if (response.data.accessToken) { setToken(response.data.accessToken); return { success: true }; }
-        } catch (error) { const msg = error.response?.data?.error || "Login failed"; console.error("Login failed:", msg); return { success: false, error: msg }; }
+            if (response.data.accessToken) {
+                setToken(response.data.accessToken); // This triggers the useEffect above
+                return { success: true };
+            }
+        } catch (error) {
+            const msg = error.response?.data?.error || "Login failed";
+            console.error("Login failed:", msg);
+            return { success: false, error: msg };
+        }
         return { success: false, error: "Login failed." };
     };
 
@@ -62,44 +108,62 @@ export const AuthProvider = ({ children }) => {
         try {
             await axios.post(`${API_BASE_URL}/api/auth/register`, { username, email, password });
             return { success: true };
-        } catch (error) { const msg = error.response?.data?.error || "Register failed"; console.error("Register failed:", msg); return { success: false, error: msg }; }
+        } catch (error) {
+            const msg = error.response?.data?.error || "Register failed";
+            console.error("Register failed:", msg);
+            return { success: false, error: msg };
+        }
     };
 
-    const addFavorite = useCallback(async (memeId) => { /* ... same as before ... */
-        if (!user) return false;
+    const addFavorite = useCallback(async (memeId) => {
+        if (!user || loadingFavorites) return false;
         const originalFavorites = new Set(favoriteIds);
         setFavoriteIds(prev => new Set(prev).add(memeId));
         try { await axiosInstance.post(`/api/favorites/${memeId}`); return true; }
         catch (error) { console.error("Failed to add favorite:", error); setFavoriteIds(originalFavorites); return false; }
-    }, [user, favoriteIds]);
+    }, [user, favoriteIds, loadingFavorites]);
 
-    const removeFavorite = useCallback(async (memeId) => { /* ... same as before ... */
-        if (!user) return false;
+    const removeFavorite = useCallback(async (memeId) => {
+        if (!user || loadingFavorites) return false;
         const originalFavorites = new Set(favoriteIds);
         setFavoriteIds(prev => { const n = new Set(prev); n.delete(memeId); return n; });
         try { await axiosInstance.delete(`/api/favorites/${memeId}`); return true; }
         catch (error) { console.error("Failed to remove favorite:", error); setFavoriteIds(originalFavorites); return false; }
-    }, [user, favoriteIds]);
+    }, [user, favoriteIds, loadingFavorites]);
 
-    // --- NEW: Function to record view history ---
+    // Record view: Add memeId to viewedIds optimistically
     const recordView = useCallback(async (memeId) => {
-        if (!user || !memeId) return; // Only record if logged in and memeId is valid
+        if (!user || !memeId || viewedIds.has(memeId)) return; // Only record if logged in, valid ID, and not already marked viewed
+
+        // Optimistic update
+        setViewedIds(prev => new Set(prev).add(memeId));
+
         try {
-            // Fire-and-forget: send request but don't necessarily wait or handle response complexly
-            axiosInstance.post(`/api/history/${memeId}`);
-            // console.log(`Recorded view for meme ${memeId}`);
+            await axiosInstance.post(`/api/history/${memeId}`);
         } catch (error) {
-            // Log error but don't block UI
             console.error(`Failed to record view for meme ${memeId}:`, error);
+             // Optional: Revert optimistic update on error?
+             // setViewedIds(prev => { const n = new Set(prev); n.delete(memeId); return n; });
         }
-    }, [user]); // Depends only on user object existence
+    }, [user, viewedIds]); // Added viewedIds dependency
 
+    // --- NEW: Function to check if a meme is viewed ---
+    // *** CORRECTED: Check 'user' state directly ***
+    const isViewed = useCallback((memeId) => {
+        return !!user && viewedIds.has(memeId); // Check if user exists and ID is in set
+    }, [user, viewedIds]); // Update dependencies
 
+    // --- Define value AFTER all functions are defined ---
     const value = {
         user, token, loading, login, register, logout: handleLogout,
-        isAuthenticated: !!user, favoriteIds, loadingFavorites, addFavorite,
-        removeFavorite, isFavorite: (memeId) => favoriteIds.has(memeId),
-        recordView // <-- Expose the recordView function
+        isAuthenticated: !!user, // Keep this for external use
+        // Favorites
+        favoriteIds, loadingFavorites, addFavorite, removeFavorite,
+        isFavorite: (memeId) => favoriteIds.has(memeId),
+        // Viewed Status
+        loadingViewed, // Expose loading state for viewed IDs
+        isViewed,      // Expose the corrected function
+        recordView     // recordView now also updates local state
     };
 
     return (

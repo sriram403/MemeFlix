@@ -1,9 +1,11 @@
+// frontend/src/pages/MyListPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import MemeGrid from '../components/MemeGrid';
 import MemeDetailModal from '../components/MemeDetailModal';
-import { useAuth, axiosInstance } from '../contexts/AuthContext';
+import { useAuth, axiosInstance } from '../contexts/AuthContext'; // Import useAuth
 import './MyListPage.css';
+
+const API_BASE_URL = 'http://localhost:3001';
 
 function MyListPage() {
     const [favoriteMemes, setFavoriteMemes] = useState([]);
@@ -11,11 +13,18 @@ function MyListPage() {
     const [error, setError] = useState(null);
     const [selectedMeme, setSelectedMeme] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const { isAuthenticated, addFavorite, removeFavorite, isFavorite, loadingFavorites } = useAuth();
-    const navigate = useNavigate(); // Keep navigate for potential redirects
 
+    // *** Get isViewed function and relevant states ***
+    const { isAuthenticated, addFavorite, removeFavorite, isFavorite, loadingFavorites, recordView, isViewed, loadingViewed } = useAuth();
+
+    // Fetch favorite memes
     const fetchFavorites = useCallback(async () => {
-        // No need to check isAuthenticated here, ProtectedRoute does it
+        // Protected route handles auth check, but check here too
+        if (!isAuthenticated) {
+             setError("Please log in to view your list.");
+             setLoading(false);
+             return;
+        }
         setLoading(true);
         setError(null);
         try {
@@ -24,98 +33,85 @@ function MyListPage() {
         } catch (err) {
             console.error("Error fetching favorites:", err);
             setError('Failed to load your list. Please try again.');
-            setFavoriteMemes([]); // Clear memes on error
+            setFavoriteMemes([]);
         } finally {
             setLoading(false);
         }
-    // No need for isAuthenticated/navigate dependency if ProtectedRoute handles it
-    }, [axiosInstance]); // Dependency is only the instance now
+    }, [isAuthenticated, axiosInstance]); // Depend on isAuthenticated
 
     useEffect(() => {
         fetchFavorites();
+        // Note: We don't need to fetch viewed IDs here, AuthContext does it
     }, [fetchFavorites]);
 
-    const openModal = (meme) => { setSelectedMeme(meme); setIsModalOpen(true); };
-    const closeModal = () => { setIsModalOpen(false); setSelectedMeme(null); };
+    // Modal Handlers
+    const openModal = (meme) => {
+        setSelectedMeme(meme);
+        setIsModalOpen(true);
+        recordView(meme.id); // Record view when opened from My List too
+    };
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setSelectedMeme(null);
+    };
 
+    // Vote Handler (same logic as other pages, updates selectedMeme if open)
     const handleVote = useCallback(async (memeId, voteType) => {
-        // Voting doesn't require auth check here as it's passed down
-        const originalMemes = [...favoriteMemes];
-        let updatedMemeData = null;
-
-        setFavoriteMemes(prevMemes => prevMemes.map(meme => {
-            if (meme.id === memeId) {
-                updatedMemeData = { ...meme, upvotes: voteType === 'upvote' ? meme.upvotes + 1 : meme.upvotes, downvotes: voteType === 'downvote' ? meme.downvotes + 1 : meme.downvotes };
-                if (selectedMeme && selectedMeme.id === memeId) setSelectedMeme(updatedMemeData);
-                return updatedMemeData;
+        if (!isAuthenticated) return;
+        // No grid update needed here, only modal if open
+        if (selectedMeme?.id === memeId) {
+            const originalSelectedMeme = {...selectedMeme};
+            setSelectedMeme(prev => ({ ...prev, upvotes: voteType === 'upvote' ? (prev.upvotes ?? 0) + 1 : prev.upvotes, downvotes: voteType === 'downvote' ? (prev.downvotes ?? 0) + 1 : prev.downvotes }));
+            try {
+                await axiosInstance.post(`${API_BASE_URL}/api/memes/${memeId}/${voteType}`);
+            } catch (err) {
+                console.error(`Error ${voteType}ing meme:`, err);
+                alert(`Failed to record ${voteType}. Please try again.`); // Simple alert for now
+                setSelectedMeme(originalSelectedMeme); // Revert modal state on error
             }
-            return meme;
-        }));
-
-        try {
-            const voteUrl = `/api/memes/${memeId}/${voteType}`;
-            await axiosInstance.post(voteUrl);
-        } catch (error) {
-            console.error(`Error ${voteType}ing meme ${memeId}:`, error);
-            alert(`Failed to register ${voteType}.`);
-            setFavoriteMemes(originalMemes);
-             if (selectedMeme && selectedMeme.id === memeId) {
-                 const originalMemeInList = originalMemes.find(m => m.id === memeId);
-                 if(originalMemeInList) setSelectedMeme(originalMemeInList);
-             }
+        } else {
+             // If voting from somewhere else (shouldn't happen here)
+             try { await axiosInstance.post(`${API_BASE_URL}/api/memes/${memeId}/${voteType}`); } catch (err) { console.error(`Error ${voteType}ing meme:`, err); alert(`Failed to record ${voteType}.`); }
         }
-    }, [favoriteMemes, selectedMeme, axiosInstance]); // Removed isAuthenticated
+    }, [isAuthenticated, selectedMeme, axiosInstance]);
 
-    // Handle removing from list using the context function and updating local state
-     const handleFavoriteToggle = useCallback(async (memeId) => {
-         // Auth check is implicit as this page is protected
-         if (loadingFavorites) return;
-         const currentlyFavorite = isFavorite(memeId); // Check current status
-
-         if (currentlyFavorite) {
-            const success = await removeFavorite(memeId); // Use context action
-            if (success) {
-                // Update local state ONLY if successful
-                setFavoriteMemes(prevMemes => prevMemes.filter(meme => meme.id !== memeId));
-                if (selectedMeme && selectedMeme.id === memeId) closeModal();
-            } else {
-                alert("Failed to remove from My List.");
+    // Favorite Toggle Handler (Removes item from this page's state)
+    const handleFavoriteToggle = useCallback(async (memeId) => {
+        if (!isAuthenticated || loadingFavorites) return;
+        const currentlyFavorite = isFavorite(memeId); // Check current status via context
+        if (currentlyFavorite) { // Only handle removal on this page
+            // Optimistic UI update
+            setFavoriteMemes(prevMemes => prevMemes.filter(m => m.id !== memeId));
+            const success = await removeFavorite(memeId); // Call context function
+            if (!success) {
+                // Revert UI if backend fails
+                fetchFavorites(); // Re-fetch to be sure
+                alert("Failed to remove from list. Please try again.");
             }
-         } else {
-             // This case shouldn't happen often on the My List page, but handle adding just in case
-             const success = await addFavorite(memeId);
-             if (success) {
-                 // Need to fetch the added meme details if we want to add it here
-                 // For simplicity, maybe just refetch the whole list? Or rely on next navigation
-                 // fetchFavorites(); // Re-fetch to include the newly added item
-                 alert("Meme added back to list (refresh might be needed).");
-             } else {
-                 alert("Failed to add to My List.");
-             }
-         }
-     }, [isAuthenticated, loadingFavorites, isFavorite, addFavorite, removeFavorite, selectedMeme, fetchFavorites, closeModal]); // Added dependencies
-
+            // Close modal if the removed item was open
+            if (selectedMeme?.id === memeId) {
+                closeModal();
+            }
+        } else {
+            // Adding is handled elsewhere, shouldn't happen from My List page directly
+            console.warn("Attempted to add favorite from My List page?");
+        }
+    }, [isAuthenticated, loadingFavorites, isFavorite, removeFavorite, fetchFavorites, selectedMeme?.id]);
 
     return (
         <div className="my-list-page">
             <h1>My List</h1>
             <MemeGrid
                 memes={favoriteMemes}
-                loading={loading || loadingFavorites} // Show loading if fetching list OR initial favorites
+                loading={loading || loadingViewed} // Combine loading states
                 error={error}
                 onMemeClick={openModal}
-                onVote={handleVote}
-                onFavoriteToggle={handleFavoriteToggle} // Pass toggle handler
-                // Add a prop to indicate this is the favorites view if needed for card styling/behavior
-                // isFavoritesView={true}
+                onVote={handleVote} // Pass vote handler to grid -> card -> modal
+                onFavoriteToggle={handleFavoriteToggle} // Pass specific remove handler
+                isMemeViewed={(memeId) => !loadingViewed && isViewed(memeId)} // Pass view check
             />
-             {!loading && !error && favoriteMemes.length === 0 && (
-                <div className="info-message empty-list-message">
-                    Your list is empty. Add some memes from the home page!
-                </div>
-             )}
 
-             {isModalOpen && (
+            {isModalOpen && selectedMeme && (
                 <MemeDetailModal
                     meme={selectedMeme}
                     onClose={closeModal}

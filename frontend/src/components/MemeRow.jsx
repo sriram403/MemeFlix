@@ -3,53 +3,46 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import MemeCard from './MemeCard';
 import './MemeRow.css';
 
-function MemeRow({ title, memes, isLoading, onMemeClick, onFavoriteToggle }) {
+// Accept isMemeViewed function prop
+function MemeRow({ title, memes, isLoading, onMemeClick, onFavoriteToggle, isMemeViewed }) {
     const rowRef = useRef(null);
     const [showLeftArrow, setShowLeftArrow] = useState(false);
-    const [showRightArrow, setShowRightArrow] = useState(true); // Assume show right initially
+    const [showRightArrow, setShowRightArrow] = useState(true);
 
     const checkScroll = useCallback(() => {
         const el = rowRef.current;
         if (el) {
             const isScrollable = el.scrollWidth > el.clientWidth;
-            setShowLeftArrow(isScrollable && el.scrollLeft > 10); // Show if scrolled slightly
-            // Show right arrow if not scrolled all the way to the end
+            setShowLeftArrow(isScrollable && el.scrollLeft > 10);
             setShowRightArrow(isScrollable && el.scrollWidth - el.clientWidth - el.scrollLeft > 10);
         } else {
             setShowLeftArrow(false);
             setShowRightArrow(false);
         }
-    }, []); // No dependencies needed initially, relies on ref.current
+    }, []);
 
     useEffect(() => {
         const el = rowRef.current;
         if (el) {
-            // Check initially and on resize
             checkScroll();
             window.addEventListener('resize', checkScroll);
-            // Check when memes data changes might affect scrollWidth
             const observer = new MutationObserver(checkScroll);
             observer.observe(el, { childList: true, subtree: true });
-
-
             return () => {
                 window.removeEventListener('resize', checkScroll);
                 observer.disconnect();
             };
         }
-    }, [memes, isLoading, checkScroll]); // Re-run if memes/loading changes
+    }, [memes, isLoading, checkScroll]);
 
     const scroll = (direction) => {
         const el = rowRef.current;
         if (el) {
-            // Calculate scroll amount (e.g., 80% of viewport width)
             const scrollAmount = el.clientWidth * 0.8;
             el.scrollBy({
                 left: direction === 'left' ? -scrollAmount : scrollAmount,
                 behavior: 'smooth'
             });
-            // We don't call checkScroll immediately here,
-            // let the onScroll event handler update the state after scrolling finishes.
         }
     };
 
@@ -67,22 +60,20 @@ function MemeRow({ title, memes, isLoading, onMemeClick, onFavoriteToggle }) {
     }
 
     return (
-        <div className="meme-row-container with-scroll-controls"> {/* Add class for context */}
+        <div className="meme-row-container with-scroll-controls">
             <h2 className="meme-row-title">{title}</h2>
-            <div className="meme-row-wrapper"> {/* Added wrapper for button positioning */}
+            <div className="meme-row-wrapper">
                 {showLeftArrow && (
                     <button
                         className="scroll-arrow left-arrow"
                         onClick={() => scroll('left')}
                         aria-label={`Scroll ${title} left`}
-                    >
-                        ‹
-                    </button>
+                    >‹</button>
                 )}
                 <div
                     className="meme-row"
                     ref={rowRef}
-                    onScroll={checkScroll} // Update arrows during/after scroll
+                    onScroll={checkScroll}
                  >
                     {memes.map(meme => (
                         <MemeCard
@@ -90,6 +81,8 @@ function MemeRow({ title, memes, isLoading, onMemeClick, onFavoriteToggle }) {
                             meme={meme}
                             onCardClick={onMemeClick}
                             onFavoriteToggle={onFavoriteToggle}
+                            // *** Pass the result of isMemeViewed for this specific meme ***
+                            isViewed={isMemeViewed ? isMemeViewed(meme.id) : false}
                         />
                     ))}
                 </div>
@@ -98,9 +91,7 @@ function MemeRow({ title, memes, isLoading, onMemeClick, onFavoriteToggle }) {
                         className="scroll-arrow right-arrow"
                         onClick={() => scroll('right')}
                         aria-label={`Scroll ${title} right`}
-                    >
-                        ›
-                    </button>
+                    >›</button>
                 )}
             </div>
         </div>
