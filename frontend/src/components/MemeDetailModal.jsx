@@ -1,8 +1,8 @@
 // frontend/src/components/MemeDetailModal.jsx
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast, ToastContainer } from 'react-toastify'; // Import toast AND ToastContainer
-import 'react-toastify/dist/ReactToastify.css'; // Import toast CSS
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import './MemeDetailModal.css';
 import './FavoriteButton.css';
 import { useAuth, axiosInstance } from '../contexts/AuthContext';
@@ -42,16 +42,20 @@ function MemeDetailModal({ meme, onClose, onVote, onFavoriteToggle }) {
   const handleFavoriteButtonClick = (event) => { event.stopPropagation(); if (isAuthenticated && !loadingFavorites && onFavoriteToggle) onFavoriteToggle(meme.id); };
   const handleTagClick = (tag, event) => { event.stopPropagation(); onClose(); navigate(`/browse?tag=${encodeURIComponent(tag)}`); };
 
-  // UPDATED Copy Link Handler (logic unchanged, just for context)
+  // --- UPDATED: Copy Link Handler ---
   const handleCopyLink = useCallback((event) => {
     event.stopPropagation();
-    if (!meme || !meme.filename) {
+    if (!meme || !meme.id) { // Check for ID now
         toast.error('Cannot copy link, meme data missing.', { theme: "dark" });
         return;
     }
-    const memeSearchQuery = `search=${encodeURIComponent(meme.filename)}`;
-    const urlToCopy = `${FRONTEND_BASE_URL}/browse?${memeSearchQuery}`;
+
+    // *** Construct URL pointing to browse page with openMemeId parameter ***
+    const memeLinkQuery = `openMemeId=${meme.id}`;
+    const urlToCopy = `${FRONTEND_BASE_URL}/browse?${memeLinkQuery}`;
+
     console.log("Copying URL:", urlToCopy);
+
     navigator.clipboard.writeText(urlToCopy)
       .then(() => {
         toast.success('Link copied!', { theme: "dark", autoClose: 2000 });
@@ -60,14 +64,14 @@ function MemeDetailModal({ meme, onClose, onVote, onFavoriteToggle }) {
         console.error('Failed to copy link: ', err);
         toast.error('Could not copy link.', { theme: "dark" });
       });
-  }, [meme]);
+  // Depend on meme.id
+  }, [meme?.id]);
 
 
   const currentMemeTags = meme.tags ? meme.tags.split(',') : [];
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      {/* Add ToastContainer back inside the overlay */}
        <ToastContainer
            position="bottom-center"
            autoClose={2000}
