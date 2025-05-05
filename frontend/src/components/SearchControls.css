@@ -1,38 +1,84 @@
 /* frontend/src/components/SearchControls.css */
 .search-controls {
     display: flex;
-    justify-content: center; /* Or flex-start / flex-end */
-    gap: 30px; /* Space between control groups */
-    padding: 15px 5%; /* Match page padding */
-    margin-bottom: 20px; /* Space below controls */
-    background-color: rgba(0, 0, 0, 0.2); /* Subtle background */
+    justify-content: center;
+    flex-wrap: wrap; /* Allow controls to wrap on smaller screens */
+    gap: 20px 30px; /* Row gap, Column gap */
+    padding: 18px 5%; /* Increased padding */
+    margin-bottom: 25px;
+    background-color: rgba(0, 0, 0, 0.25); /* Slightly darker */
     border-bottom: 1px solid var(--border-color);
+    border-top: 1px solid var(--border-color); /* Add top border */
 }
 
 .control-group {
     display: flex;
     align-items: center;
-    gap: 10px; /* Space between label and select */
+    gap: 8px; /* Smaller gap */
 }
 
 .control-group label {
     color: var(--text-secondary);
     font-size: 0.9em;
     font-weight: 500;
+    white-space: nowrap; /* Prevent label wrapping */
 }
 
 .control-group select {
-    padding: 6px 10px;
+    padding: 7px 12px; /* Adjusted padding */
     background-color: var(--secondary-dark-bg);
     color: var(--text-primary);
     border: 1px solid var(--border-color);
     border-radius: 4px;
     font-size: 0.9em;
     cursor: pointer;
+    min-width: 130px; /* Give dropdowns a min width */
+    appearance: none; /* Remove default arrow */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23aaa' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E"); /* Custom arrow */
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px; /* Space for custom arrow */
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; /* Add transitions */
 }
 
-.control-group select:focus {
-    outline: none;
-    border-color: var(--accent-red);
-    box-shadow: 0 0 8px var(--accent-red-glow);
+/* Hover state */
+.control-group select:hover {
+    border-color: var(--text-secondary);
+    background-color: #2f2f2f;
+}
+
+/* Focus state inherited from index.css */
+.control-group select:focus-visible {
+    /* Add specific overrides if needed */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23eee' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E"); /* Lighter arrow on focus */
+}
+
+/* Disabled state */
+.control-group select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: #252525;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23666' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E"); /* Dimmer arrow when disabled */
+}
+
+/* Responsiveness */
+@media (max-width: 600px) {
+    .search-controls {
+        justify-content: flex-start; /* Align left on small screens */
+        gap: 15px; /* Reduce gap */
+    }
+    .control-group {
+        width: calc(50% - 10px); /* Roughly two columns */
+    }
+    .control-group select {
+        width: 100%; /* Make select take full width of group */
+        min-width: 0;
+    }
+}
+@media (max-width: 400px) {
+     .control-group {
+        width: 100%; /* Stack controls */
+    }
 }
