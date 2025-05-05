@@ -15,7 +15,8 @@ function MyListPage() {
     const [selectedMeme, setSelectedMeme] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const { isAuthenticated, addFavorite, removeFavorite, isFavorite, loadingFavorites, recordView, isViewed, loadingViewed } = useAuth();
+    // *** Use submitVote and getUserVoteStatus from context ***
+    const { isAuthenticated, addFavorite, removeFavorite, isFavorite, loadingFavorites, recordView, isViewed, loadingViewed, submitVote, getUserVoteStatus } = useAuth();
 
     // Fetch favorite memes (Unchanged)
     const fetchFavorites = useCallback(async () => { if (!isAuthenticated) { setError("Please log in to view your list."); setLoading(false); return; } setLoading(true); setError(null); try { const response = await axiosInstance.get('/api/favorites'); setFavoriteMemes(response.data.memes || []); } catch (err) { console.error("Error fetching favorites:", err); setError('Failed to load your list. Please try again.'); setFavoriteMemes([]); } finally { setLoading(false); } }, [isAuthenticated]);
@@ -25,8 +26,62 @@ function MyListPage() {
     const openModal = useCallback((meme) => { setSelectedMeme(meme); setIsModalOpen(true); recordView(meme.id); }, [recordView]);
     const closeModal = useCallback(() => { setIsModalOpen(false); setSelectedMeme(null); }, []);
 
-    // Vote Handler (Unchanged)
-    const handleVote = useCallback(async (memeId, voteType) => { if (!isAuthenticated) { alert("Please log in to vote."); return; } const originalFavoriteMemes = [...favoriteMemes]; const originalSelectedMeme = selectedMeme ? {...selectedMeme} : null; setFavoriteMemes(prevMemes => prevMemes.map(m => { if (m.id === memeId) { const cu = m.upvotes ?? 0; const cd = m.downvotes ?? 0; return { ...m, upvotes: voteType === 'upvote' ? cu + 1 : cu, downvotes: voteType === 'downvote' ? cd + 1 : cd }; } return m; })); if (selectedMeme?.id === memeId) { setSelectedMeme(prev => { if (!prev) return null; const cu = prev.upvotes ?? 0; const cd = prev.downvotes ?? 0; return { ...prev, upvotes: voteType === 'upvote' ? cu + 1 : cu, downvotes: voteType === 'downvote' ? cd + 1 : cd } }); } try { await axiosInstance.post(`${API_BASE_URL}/api/memes/${memeId}/${voteType}`); } catch (err) { console.error(`Error ${voteType}ing meme:`, err); setError(`Failed to record ${voteType}.`); setFavoriteMemes(originalFavoriteMemes); if (originalSelectedMeme && selectedMeme?.id === memeId) { setSelectedMeme(originalSelectedMeme); } } }, [isAuthenticated, favoriteMemes, selectedMeme, axiosInstance]);
+    // *** UPDATED handleVote to use context function ***
+    const handleVote = useCallback(async (memeId, voteType) => {
+        if (!isAuthenticated) {
+            alert("Please log in to vote.");
+            return;
+        }
+        setError(null);
+
+        // Store original states
+        const originalFavoriteMemes = [...favoriteMemes];
+        const originalSelectedMeme = selectedMeme ? {...selectedMeme} : null;
+
+        // --- Optimistic UI Update for COUNTS ---
+        const voteChange = voteType === 'upvote' ? 1 : -1;
+        const currentVoteStatus = getUserVoteStatus(memeId);
+        let upvoteIncrement = 0;
+        let downvoteIncrement = 0;
+
+        if (currentVoteStatus === voteChange) { // Removing vote
+            if(voteType === 'upvote') upvoteIncrement = -1; else downvoteIncrement = -1;
+        } else if (currentVoteStatus === -voteChange) { // Changing vote
+             if(voteType === 'upvote') { upvoteIncrement = 1; downvoteIncrement = -1; }
+             else { upvoteIncrement = -1; downvoteIncrement = 1; }
+        } else { // Adding new vote
+             if(voteType === 'upvote') upvoteIncrement = 1; else downvoteIncrement = 1;
+        }
+
+        // 1. Update the main 'favoriteMemes' list state
+        setFavoriteMemes(prevMemes => prevMemes.map(m => {
+            if (m.id === memeId) {
+                return { ...m, upvotes: (m.upvotes ?? 0) + upvoteIncrement, downvotes: (m.downvotes ?? 0) + downvoteIncrement };
+            } return m;
+        }));
+
+        // 2. Update the 'selectedMeme' state if the voted meme is open in the modal
+        if (selectedMeme?.id === memeId) {
+             setSelectedMeme(prev => {
+                 if (!prev) return null;
+                 return { ...prev, upvotes: (prev.upvotes ?? 0) + upvoteIncrement, downvotes: (prev.downvotes ?? 0) + downvoteIncrement };
+             });
+        }
+        // --- End Optimistic UI Update ---
+
+        // --- Call Context Function for API and State ---
+        const result = await submitVote(memeId, voteType);
+
+        if (!result.success) {
+            setError(result.error || `Failed to record ${voteType}.`);
+            // Revert optimistic count updates
+            setFavoriteMemes(originalFavoriteMemes);
+            if (originalSelectedMeme && selectedMeme?.id === memeId) {
+                 setSelectedMeme(originalSelectedMeme);
+            }
+        }
+     // Depend on context function and states needed for update/revert
+    }, [isAuthenticated, favoriteMemes, selectedMeme, submitVote, getUserVoteStatus]); // Added submitVote, getUserVoteStatus
 
     // Favorite Toggle Handler (Unchanged)
     const handleFavoriteToggle = useCallback(async (memeId) => { if (!isAuthenticated || loadingFavorites) return; const currentlyFavorite = isFavorite(memeId); if (currentlyFavorite) { const originalMemes = [...favoriteMemes]; setFavoriteMemes(prevMemes => prevMemes.filter(m => m.id !== memeId)); if (selectedMeme?.id === memeId) { closeModal(); } const success = await removeFavorite(memeId); if (!success) { setFavoriteMemes(originalMemes); alert("Failed to remove from list. Please try again."); } } else { console.warn("Attempted to add favorite from My List page?"); } }, [isAuthenticated, loadingFavorites, isFavorite, removeFavorite, favoriteMemes, selectedMeme?.id, closeModal]);
@@ -37,7 +92,6 @@ function MyListPage() {
         <div className="my-list-page">
             <h1>My List</h1>
 
-            {/* Add role="alert" to error message */}
             {isGridLoading && <Spinner size="large" message="Loading your list..." />}
             {!isGridLoading && error && <div className="error-message" role="alert">{error}</div>}
 
@@ -47,23 +101,24 @@ function MyListPage() {
                     loading={false}
                     error={null}
                     onMemeClick={openModal}
-                    onVote={handleVote}
+                    onVote={handleVote} // Pass updated handler
                     onFavoriteToggle={handleFavoriteToggle}
-                    isMemeViewed={(memeId) => isViewed(memeId)}
+                    // Pass down getUserVoteStatus if needed for visual indicators
+                    // getUserVoteStatus={getUserVoteStatus}
+                    isMemeViewed={(memeId) => !loadingViewed && isViewed(memeId)}
                 />
             )}
 
-            {/* Add role="status" to info message */}
-             {!isGridLoading && !error && favoriteMemes.length === 0 && (
-                 <div className="info-message" role="status">Your list is empty. Add some memes!</div>
-             )}
+             {!isGridLoading && !error && favoriteMemes.length === 0 && ( <div className="info-message" role="status">Your list is empty. Add some memes!</div> )}
 
             {isModalOpen && selectedMeme && (
                 <MemeDetailModal
                     meme={selectedMeme}
                     onClose={closeModal}
-                    onVote={handleVote}
+                    onVote={handleVote} // Pass updated handler
                     onFavoriteToggle={handleFavoriteToggle}
+                    // Pass down getUserVoteStatus if needed
+                    // getUserVoteStatus={getUserVoteStatus}
                 />
             )}
         </div>
