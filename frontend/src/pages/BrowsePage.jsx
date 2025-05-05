@@ -22,8 +22,8 @@ function BrowsePage() {
     const [selectedMeme, setSelectedMeme] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    // *** Get the updated isViewed function ***
-    const { isAuthenticated, addFavorite, removeFavorite, isFavorite, loadingFavorites, recordView, isViewed, submitVote, getUserVoteStatus } = useAuth();
+    // *** REMOVE submitVote, getUserVoteStatus from context destructuring ***
+    const { isAuthenticated, addFavorite, removeFavorite, isFavorite, loadingFavorites, recordView, isViewed } = useAuth();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -41,19 +41,82 @@ function BrowsePage() {
     // Effect to check for 'openMemeId' after memes load (Unchanged)
     useEffect(() => { if (!loading && memes.length > 0) { const openIdParam = searchParams.get('openMemeId'); if (openIdParam) { const memeIdToOpen = parseInt(openIdParam, 10); const memeToOpen = memes.find(m => m.id === memeIdToOpen); if (memeToOpen) { if (!isModalOpen || selectedMeme?.id !== memeIdToOpen) { openModal(memeToOpen); } setSearchParams(prev => { prev.delete('openMemeId'); return prev; }, { replace: true }); } else { setSearchParams(prev => { prev.delete('openMemeId'); return prev; }, { replace: true }); } } } }, [loading, memes, searchParams, setSearchParams, openModal, isModalOpen, selectedMeme?.id]);
 
-    // Event Handlers (Unchanged)
+    // --- Other Event Handlers ---
     const handlePageChange = (newPage) => { setSearchParams(prev => { prev.set('page', newPage.toString()); return prev; }, { replace: true }); window.scrollTo(0, 0); };
     const handleFilterChange = (newType) => { setSearchParams(prev => { if (newType) prev.set('type', newType); else prev.delete('type'); prev.set('page', '1'); return prev; }, { replace: true }); };
     const handleSortChange = (newSort) => { setSearchParams(prev => { if (newSort && newSort !== 'newest') prev.set('sort', newSort); else prev.delete('sort'); prev.set('page', '1'); return prev; }, { replace: true }); };
     const handleTagChange = (newTag) => { setSearchParams(prev => { if (newTag) prev.set('tag', newTag); else prev.delete('tag'); prev.set('page', '1'); return prev; }, { replace: true }); };
     const handleSearchSubmit = (query) => { setSearchParams(prev => { if (query) prev.set('search', query); else prev.delete('search'); prev.set('page', '1'); return prev; }, { replace: true }); };
-    const handleVote = useCallback(async (memeId, voteType) => { if (!isAuthenticated) { alert("Please log in to vote."); return; } setError(null); const originalMemes = [...memes]; const originalSelectedMeme = selectedMeme ? {...selectedMeme} : null; const voteChange = voteType === 'upvote' ? 1 : -1; const currentVoteStatus = getUserVoteStatus(memeId); let upvoteIncrement = 0; let downvoteIncrement = 0; if (currentVoteStatus === voteChange) { if(voteType === 'upvote') upvoteIncrement = -1; else downvoteIncrement = -1; } else if (currentVoteStatus === -voteChange) { if(voteType === 'upvote') { upvoteIncrement = 1; downvoteIncrement = -1; } else { upvoteIncrement = -1; downvoteIncrement = 1; } } else { if(voteType === 'upvote') upvoteIncrement = 1; else downvoteIncrement = 1; } setMemes(prevMemes => prevMemes.map(m => { if (m.id === memeId) { return { ...m, upvotes: (m.upvotes ?? 0) + upvoteIncrement, downvotes: (m.downvotes ?? 0) + downvoteIncrement }; } return m; })); if (selectedMeme?.id === memeId) { setSelectedMeme(prev => ({ ...prev, upvotes: voteType === 'upvote' ? (prev.upvotes ?? 0) + 1 : prev.upvotes, downvotes: voteType === 'downvote' ? (prev.downvotes ?? 0) + 1 : prev.downvotes })); } const result = await submitVote(memeId, voteType); if (!result.success) { setError(result.error || `Failed to record ${voteType}.`); setMemes(originalMemes); if (originalSelectedMeme && selectedMeme?.id === memeId) { setSelectedMeme(originalSelectedMeme); } } }, [isAuthenticated, memes, selectedMeme, submitVote, getUserVoteStatus]);
+
+    // *** UPDATED handleVote to call API directly ***
+    const handleVote = useCallback(async (memeId, voteType) => {
+        if (!isAuthenticated) {
+            alert("Please log in to vote.");
+            return;
+        }
+        setError(null);
+
+        // Store original states
+        const originalMemes = [...memes];
+        const originalSelectedMeme = selectedMeme ? {...selectedMeme} : null;
+
+        // --- Optimistic UI Update for Counts ---
+        const memeToUpdate = originalMemes.find(m => m.id === memeId);
+        const currentVoteStatus = memeToUpdate?.user_vote_status || selectedMeme?.user_vote_status || 0; // Use data from list or modal
+        const voteChange = voteType === 'upvote' ? 1 : -1;
+        let upvoteIncrement = 0;
+        let downvoteIncrement = 0;
+        let nextVoteStatus = 0; // Calculate next status for optimistic update
+
+        if (currentVoteStatus === voteChange) { // Removing vote
+            if(voteType === 'upvote') upvoteIncrement = -1; else downvoteIncrement = -1;
+            nextVoteStatus = 0;
+        } else if (currentVoteStatus === -voteChange) { // Changing vote
+             if(voteType === 'upvote') { upvoteIncrement = 1; downvoteIncrement = -1; }
+             else { upvoteIncrement = -1; downvoteIncrement = 1; }
+             nextVoteStatus = voteChange;
+        } else { // Adding new vote
+             if(voteType === 'upvote') upvoteIncrement = 1; else downvoteIncrement = 1;
+             nextVoteStatus = voteChange;
+        }
+
+        // 1. Update the main 'memes' list state
+        setMemes(prevMemes => prevMemes.map(m => {
+            if (m.id === memeId) {
+                return { ...m, upvotes: (m.upvotes ?? 0) + upvoteIncrement, downvotes: (m.downvotes ?? 0) + downvoteIncrement, user_vote_status: nextVoteStatus };
+            } return m;
+        }));
+
+        // 2. Update the 'selectedMeme' state if the voted meme is open in the modal
+        if (selectedMeme?.id === memeId) {
+             setSelectedMeme(prev => {
+                 if (!prev) return null;
+                 return { ...prev, upvotes: (prev.upvotes ?? 0) + upvoteIncrement, downvotes: (prev.downvotes ?? 0) + downvoteIncrement, user_vote_status: nextVoteStatus };
+             });
+        }
+        // --- End Optimistic UI Update ---
+
+        // --- Direct API Call ---
+        try {
+            await axiosInstance.post(`${API_BASE_URL}/api/memes/${memeId}/${voteType}`);
+            // Success
+        } catch (err) {
+            console.error(`Error ${voteType}ing meme:`, err);
+            setError(err.response?.data?.error || `Failed to record ${voteType}.`);
+            // Revert UI
+            setMemes(originalMemes);
+            if (originalSelectedMeme && selectedMeme?.id === memeId) {
+                 setSelectedMeme(originalSelectedMeme);
+            }
+        }
+    }, [isAuthenticated, memes, selectedMeme]); // Removed context vote functions
+
     const handleFavoriteToggle = useCallback(async (memeId) => { if (!isAuthenticated || loadingFavorites) return; const currentlyFavorite = isFavorite(memeId); const action = currentlyFavorite ? removeFavorite : addFavorite; await action(memeId); }, [isAuthenticated, loadingFavorites, isFavorite, addFavorite, removeFavorite]);
 
     // Render Logic
     const { query: currentQuery, type: currentType, sort: currentSort, tag: currentTag } = getCurrentParams();
     const pageTitle = currentTag ? `Memes tagged "${currentTag}"` : currentQuery ? `Search Results for "${currentQuery}"` : "Browse All Memes";
-    const isGridLoading = loading || loadingAllTags; // Combine loading states
+    const isGridLoading = loading || loadingAllTags;
 
     return (
         <div className="browse-page">
@@ -76,13 +139,13 @@ function BrowsePage() {
                     memes={memes}
                     error={null}
                     onMemeClick={openModal}
-                    onVote={handleVote}
+                    onVote={handleVote} // Pass updated handler
                     onFavoriteToggle={handleFavoriteToggle}
-                    // *** Pass isViewed function that accepts meme object ***
+                    // Pass the meme data itself for the check
                     isMemeViewedCheck={(memeData) => isViewed(memeData.id, memeData)}
                 />
              )}
-            {pagination.totalPages > 1 && !isGridLoading && ( // Show pagination if applicable
+            {pagination.totalPages > 1 && !isGridLoading && (
                  <PaginationControls
                      currentPage={pagination.currentPage}
                      totalPages={pagination.totalPages}
@@ -91,10 +154,11 @@ function BrowsePage() {
              )}
             {isModalOpen && selectedMeme && (
                 <MemeDetailModal
-                    meme={selectedMeme}
+                    meme={selectedMeme} // Pass updated modal meme state
                     onClose={closeModal}
-                    onVote={handleVote}
+                    onVote={handleVote} // Pass updated handler
                     onFavoriteToggle={handleFavoriteToggle}
+                    // No need to pass getUserVoteStatus
                 />
             )}
         </div>

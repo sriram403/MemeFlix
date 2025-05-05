@@ -4,7 +4,7 @@ import './MemeGrid.css';
 import MemeCard from './MemeCard';
 import Spinner from './Spinner';
 
-// *** Rename prop to isMemeViewedCheck ***
+// Use 'isMemeViewedCheck' consistently for the prop name
 function MemeGrid({ memes, loading, error, onMemeClick, onVote, onFavoriteToggle, isMemeViewedCheck }) {
 
   if (loading) {
@@ -30,10 +30,9 @@ function MemeGrid({ memes, loading, error, onMemeClick, onVote, onFavoriteToggle
              key={meme.id}
              meme={meme}
              onCardClick={onMemeClick}
-             onVote={onVote}
+             onVote={onVote} // Keep passing down if needed elsewhere eventually
              onFavoriteToggle={onFavoriteToggle}
-             // *** Call isMemeViewedCheck with the meme object ***
-             // meme.is_viewed comes from backend, isMemeViewedCheck checks session state too
+             // Call the passed function with the meme data
              isViewed={isMemeViewedCheck ? isMemeViewedCheck(meme) : !!meme.is_viewed}
            />
          ))}

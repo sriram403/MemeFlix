@@ -23,17 +23,39 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [favoriteIds, setFavoriteIds] = useState(new Set());
     const [loadingFavorites, setLoadingFavorites] = useState(false);
-    const [userVotes, setUserVotes] = useState({});
     const [sessionViewedIds, setSessionViewedIds] = useState(new Set());
+
+    // --- REMOVED User Votes State & Logic ---
+    // const [userVotes, setUserVotes] = useState({}); // REMOVED
+    // const [loadingVotes, setLoadingVotes] = useState(false); // REMOVED
+    // const fetchUserVotes = useCallback(async () => { ... }); // REMOVED
 
     // Fetch Favorites (Unchanged)
     const fetchFavoriteIds = useCallback(async () => { if (!token) { setFavoriteIds(new Set()); setLoadingFavorites(false); return; } setLoadingFavorites(true); try { const response = await axiosInstance.get('/api/favorites/ids'); setFavoriteIds(new Set(response.data.favoriteMemeIds || [])); } catch (error) { console.error("Failed to fetch favorite IDs:", error); setFavoriteIds(new Set());} finally { setLoadingFavorites(false); } }, [token]);
 
-    // Logout handler (Unchanged)
-    const handleLogout = useCallback(() => { setToken(null); setUser(null); setFavoriteIds(new Set()); setSessionViewedIds(new Set()); setUserVotes({}); localStorage.removeItem('memeflix_token'); setLoading(false); }, []);
+    // Logout handler - REMOVE userVotes clearing
+    const handleLogout = useCallback(() => {
+        setToken(null); setUser(null); setFavoriteIds(new Set());
+        setSessionViewedIds(new Set());
+        // setUserVotes({}); // REMOVED
+        localStorage.removeItem('memeflix_token'); setLoading(false);
+    }, []);
 
-    // Effect to fetch user data and favorites (Unchanged)
-    useEffect(() => { if (token) { localStorage.setItem('memeflix_token', token); setLoading(true); axiosInstance.get('/api/auth/me').then(response => { setUser(response.data); Promise.all([ fetchFavoriteIds() ]).finally(() => { setLoading(false); }); }).catch(() => { handleLogout(); }); } else { handleLogout(); } }, [token, fetchFavoriteIds, handleLogout]);
+    // Effect to fetch user data and favorites
+    useEffect(() => {
+        if (token) {
+            localStorage.setItem('memeflix_token', token);
+            setLoading(true);
+            axiosInstance.get('/api/auth/me')
+                .then(response => {
+                    setUser(response.data);
+                    // Only fetch favorites now
+                    Promise.all([ fetchFavoriteIds() ]).finally(() => { setLoading(false); });
+                })
+                .catch(() => { handleLogout(); });
+        } else { handleLogout(); }
+    // REMOVED fetchUserVotes from dependencies
+    }, [token, fetchFavoriteIds, handleLogout]);
 
     // Login/Register/Favorites (Unchanged)
     const login = async (username, password) => { try { const response = await axios.post(`${API_BASE_URL}/api/auth/login`, { username, password }); if (response.data.accessToken) { setToken(response.data.accessToken); return { success: true }; } } catch (error) { const msg = error.response?.data?.error || "Login failed"; console.error("Login failed:", msg); return { success: false, error: msg }; } return { success: false, error: "Login failed." }; };
@@ -44,41 +66,28 @@ export const AuthProvider = ({ children }) => {
     // Record View (Unchanged)
     const recordView = useCallback(async (memeId) => { if (!user || !memeId) return; if (!sessionViewedIds.has(memeId)) { setSessionViewedIds(prev => new Set(prev).add(memeId)); } try { await axiosInstance.post(`/api/history/${memeId}`); } catch (error) { console.error(`Failed to record view for meme ${memeId} on backend:`, error); } }, [user, sessionViewedIds]);
 
-    // Get User Vote Status / Submit Vote (Unchanged)
-    const getUserVoteStatus = useCallback((memeId) => { if (!user) return 0; return userVotes[memeId] || 0; }, [user, userVotes]);
-    const submitVote = useCallback(async (memeId, voteType) => { if (!user) return { success: false, error: 'User not logged in' }; const voteTypeInt = voteType === 'upvote' ? 1 : -1; const currentVote = userVotes[memeId]; let optimisticVote = voteTypeInt; if (currentVote === voteTypeInt) { optimisticVote = 0; } const originalVotes = {...userVotes}; setUserVotes(prev => { const newVotes = {...prev}; if (optimisticVote === 0) { delete newVotes[memeId]; } else { newVotes[memeId] = optimisticVote; } return newVotes; }); try { const response = await axiosInstance.post(`/api/memes/${memeId}/${voteType}`); return { success: true, message: response.data.message }; } catch (error) { console.error(`Failed to submit ${voteType} for meme ${memeId}:`, error); setUserVotes(originalVotes); return { success: false, error: error.response?.data?.error || `Failed to ${voteType}.` }; } }, [user, userVotes]);
+    // isViewed Check (Unchanged - still uses session + API flag if passed)
+    const isViewed = useCallback((memeId, memeData) => { if (!user) return false; if (memeData?.is_viewed) { return true; } return sessionViewedIds.has(memeId); }, [user, sessionViewedIds]);
+
+    // --- REMOVED Get User Vote Status & Submit Vote ---
+    // const getUserVoteStatus = useCallback((memeId) => { ... }); // REMOVED
+    // const submitVote = useCallback(async (memeId, voteType) => { ... }); // REMOVED
 
     // Clear History (Unchanged)
     const clearHistory = useCallback(async () => { if (!user) return { success: false, error: 'User not logged in' }; const originalSessionViewed = new Set(sessionViewedIds); try { const response = await axiosInstance.delete('/api/history/clear'); setSessionViewedIds(new Set()); return { success: true, message: response.data.message }; } catch (error) { console.error("Failed to clear history:", error); return { success: false, error: error.response?.data?.error || 'Failed to clear history.' }; } }, [user, sessionViewedIds]);
 
 
-    // *** CORRECTED isViewed Function ***
-    const isViewed = useCallback((memeId, memeData) => {
-        // Use 'user' state directly instead of 'isAuthenticated'
-        if (!user) return false;
-        // Check the flag from the backend API data first
-        if (memeData?.is_viewed) {
-            return true;
-        }
-        // Otherwise, check if it was viewed during the current session
-        return sessionViewedIds.has(memeId);
-    // Update dependency to 'user'
-    }, [user, sessionViewedIds]);
-
-
-    // Define value AFTER all functions are defined
+    // Define value provided by context
     const value = {
         user, token, loading, login, register, logout: handleLogout,
-        isAuthenticated: !!user, // Keep this for external consumption
+        isAuthenticated: !!user,
         // Favorites
         favoriteIds, loadingFavorites, addFavorite, removeFavorite,
         isFavorite: (memeId) => favoriteIds.has(memeId),
         // Viewed Status
-        isViewed,      // Expose the corrected function
+        isViewed,
         recordView,
-        // Votes
-        getUserVoteStatus,
-        submitVote,
+        // Votes (REMOVED context functions)
         // History
         clearHistory
     };
