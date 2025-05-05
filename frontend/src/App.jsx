@@ -1,6 +1,8 @@
 // frontend/src/App.jsx
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify'; // Import ToastContainer
+import 'react-toastify/dist/ReactToastify.css'; // Import default CSS
 import './App.css';
 import Navbar from './components/Navbar';
 import LoginPage from './pages/LoginPage';
@@ -50,6 +52,20 @@ function App() {
             <footer>
                 <p>Memeflix Footer - All Rights Reserved (locally)</p>
             </footer>
+            {/* --- Ensure ToastContainer is here --- */}
+            <ToastContainer
+                position="bottom-center"
+                autoClose={3000}
+                hideProgressBar
+                newestOnTop={false}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="dark"
+            />
+            {/* --- End ToastContainer --- */}
         </div>
     );
 }
