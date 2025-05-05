@@ -1,7 +1,8 @@
+// frontend/src/pages/RegisterPage.jsx
 import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import './AuthForm.css';
+import { useAuth } from '../contexts/AuthContext';
+import './AuthForm.css'; // Reuse styles
 
 function RegisterPage() {
     const [username, setUsername] = useState('');
@@ -13,14 +14,10 @@ function RegisterPage() {
     const { register } = useAuth();
     const navigate = useNavigate();
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const handleSubmit = async (event) => {
+        event.preventDefault();
         if (password !== confirmPassword) {
-            setError("Passwords don't match.");
-            return;
-        }
-        if (password.length < 6) { // Example basic validation
-            setError("Password must be at least 6 characters long.");
+            setError('Passwords do not match.');
             return;
         }
         setError('');
@@ -28,8 +25,7 @@ function RegisterPage() {
         const result = await register(username, email, password);
         setLoading(false);
         if (result.success) {
-            alert("Registration successful! Please log in.");
-            navigate('/login');
+            navigate('/login', { state: { message: 'Registration successful! Please log in.' } }); // Redirect to login
         } else {
             setError(result.error || 'Registration failed. Please try again.');
         }
@@ -38,8 +34,9 @@ function RegisterPage() {
     return (
         <div className="auth-page">
             <form className="auth-form" onSubmit={handleSubmit}>
-                <h2>Register for Memeflix</h2>
-                 {error && <p className="error-message">{error}</p>}
+                <h2>Register</h2>
+                {/* Add role="alert" */}
+                {error && <div className="error-message" role="alert">{error}</div>}
                 <div className="form-group">
                     <label htmlFor="username">Username</label>
                     <input
@@ -48,7 +45,7 @@ function RegisterPage() {
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         required
-                        autoComplete="username"
+                        autoComplete='username'
                     />
                 </div>
                 <div className="form-group">
@@ -59,21 +56,21 @@ function RegisterPage() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
-                        autoComplete="email"
+                        autoComplete='email'
                     />
                 </div>
                 <div className="form-group">
-                    <label htmlFor="password">Password (min 6 chars)</label>
+                    <label htmlFor="password">Password</label>
                     <input
                         type="password"
                         id="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        autoComplete="new-password"
+                        autoComplete='new-password'
                     />
                 </div>
-                 <div className="form-group">
+                <div className="form-group">
                     <label htmlFor="confirmPassword">Confirm Password</label>
                     <input
                         type="password"
@@ -81,15 +78,15 @@ function RegisterPage() {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         required
-                        autoComplete="new-password"
+                        autoComplete='new-password'
                     />
                 </div>
                 <button type="submit" disabled={loading}>
                     {loading ? 'Registering...' : 'Register'}
                 </button>
-                 <p className="auth-switch">
-                    Already have an account? <Link to="/login">Login here</Link>
-                </p>
+                 <div className="auth-switch">
+                    Already have an account? <Link to="/login">Log in</Link>.
+                </div>
             </form>
         </div>
     );

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MemeGrid from '../components/MemeGrid';
 import MemeDetailModal from '../components/MemeDetailModal';
-import Spinner from '../components/Spinner'; // Import Spinner
+import Spinner from '../components/Spinner';
 import { useAuth, axiosInstance } from '../contexts/AuthContext';
 import './HistoryPage.css';
 
@@ -11,12 +11,11 @@ const API_BASE_URL = 'http://localhost:3001';
 
 function HistoryPage() {
     const [historyMemes, setHistoryMemes] = useState([]);
-    const [loading, setLoading] = useState(true); // Loading state for history list
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selectedMeme, setSelectedMeme] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    // Include loadingViewed from context
     const { isAuthenticated, addFavorite, removeFavorite, isFavorite, loadingFavorites, recordView, isViewed, loadingViewed } = useAuth();
     const navigate = useNavigate();
 
@@ -34,7 +33,6 @@ function HistoryPage() {
     // Favorite Toggle Handler (Unchanged)
     const handleFavoriteToggle = useCallback(async (memeId) => { if (!isAuthenticated || loadingFavorites) return; const currentlyFavorite = isFavorite(memeId); const action = currentlyFavorite ? removeFavorite : addFavorite; await action(memeId); }, [isAuthenticated, loadingFavorites, isFavorite, addFavorite, removeFavorite]);
 
-    // Combine loading states for the grid
     const isGridLoading = loading || loadingViewed;
 
     return (
@@ -42,28 +40,26 @@ function HistoryPage() {
             <h1>Viewing History</h1>
             <p className="history-subtitle">Memes you've recently watched.</p>
 
-            {/* Use Spinner or show error */}
+            {/* Add role="alert" to error message */}
             {isGridLoading && <Spinner size="large" message="Loading history..." />}
             {!isGridLoading && error && <div className="error-message" role="alert">{error}</div>}
 
-            {/* Render grid only when not loading and no error */}
             {!isGridLoading && !error && (
                 <MemeGrid
                     memes={historyMemes}
-                    loading={false} // Loading handled above
-                    error={null}    // Error handled above
+                    loading={false}
+                    error={null}
                     onMemeClick={openModal}
                     onVote={handleVote}
                     onFavoriteToggle={handleFavoriteToggle}
-                    isMemeViewed={(memeId) => isViewed(memeId)} // Technically always true, but pass consistently
+                    isMemeViewed={(memeId) => isViewed(memeId)}
                 />
             )}
 
-             {/* Message if history is empty */}
+             {/* Add role="status" to info message */}
              {!isGridLoading && !error && historyMemes.length === 0 && (
                  <div className="empty-history-message info-message" role="status">You haven't viewed any memes yet. Go watch some!</div>
              )}
-
 
             {isModalOpen && selectedMeme && (
                 <MemeDetailModal

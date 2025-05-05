@@ -5,7 +5,7 @@ import MemeRow from '../components/MemeRow';
 import MemeDetailModal from '../components/MemeDetailModal';
 import HeroBanner from '../components/HeroBanner';
 import SearchControls from '../components/SearchControls';
-import Spinner from '../components/Spinner'; // Import Spinner
+import Spinner from '../components/Spinner';
 import { useAuth, axiosInstance } from '../contexts/AuthContext';
 import './HomePage.css';
 
@@ -45,56 +45,32 @@ function HomePage() {
     const handleSortChange = (newSort) => { handleSearchRedirect({ type: initialFilterType, sort: newSort }); };
 
     // --- Render Logic ---
-
-    // Show main loading spinner if featured content OR tags are initially loading
     if (loadingFeatured || (loadingTags && popularTags.length === 0)) {
-         // Use Spinner component for initial load
          return (
-            <div className="loading-page-container"> {/* Optional wrapper */}
+            <div className="loading-page-container" role="status" aria-live="polite">
                  <Spinner size="large" message="Loading Memeflix..." />
             </div>
          );
     }
-
-    // Show error only if nothing could be loaded at all
     if (error && !featuredMeme && popularTags.length === 0) {
-        return <div className="error-page">{error}</div>; // Keep text for error message
+        return <div className="error-page" role="alert">{error}</div>;
     }
-
 
     return (
         <div className="home-page">
-            {featuredMeme ? (
-                <HeroBanner
-                    featuredMeme={featuredMeme}
-                    onPlayClick={openModal}
-                    onFavoriteToggle={handleFavoriteToggle}
-                />
-            ) : (
-                 // Show spinner *specifically* for featured if it's still loading but tags aren't
-                 loadingFeatured ? <Spinner size="medium" message="Loading featured meme..." /> :
-                 !error && <div className="info-message">Could not load featured meme.</div> // Show info if not loading and no other error
-            )}
+            {featuredMeme ? ( <HeroBanner featuredMeme={featuredMeme} onPlayClick={openModal} onFavoriteToggle={handleFavoriteToggle}/>
+            ) : ( loadingFeatured ? <Spinner size="medium" message="Loading featured meme..." /> : !error && <div className="info-message" role="status">Could not load featured meme.</div> )}
 
-            <SearchControls
-                currentFilterType={initialFilterType}
-                currentSortBy={initialSortBy}
-                onFilterChange={handleFilterChange}
-                onSortChange={handleSortChange}
-                showTagFilter={false}
-            />
+            <SearchControls currentFilterType={initialFilterType} currentSortBy={initialSortBy} onFilterChange={handleFilterChange} onSortChange={handleSortChange} showTagFilter={false} />
 
-            {/* Show specific spinner or error for tags if featured loaded but tags didn't */}
             {loadingTags && !loadingFeatured && <Spinner size="medium" message="Loading categories..." />}
-            {!loadingTags && error && <div className="error-message">{error}</div>}
-
+            {!loadingTags && error && <div className="error-message" role="alert">{error}</div>}
 
             {!loadingTags && popularTags.map(tagInfo => (
                 <MemeRow
                     key={tagInfo.tag}
                     title={`Popular in "${tagInfo.tag}"`}
                     memes={tagMemes[tagInfo.tag] || []}
-                    // Pass loading state down to MemeRow
                     isLoading={loadingTagMemes[tagInfo.tag] ?? true}
                     onMemeClick={openModal}
                     onFavoriteToggle={handleFavoriteToggle}
@@ -102,14 +78,7 @@ function HomePage() {
                 />
             ))}
 
-            {isModalOpen && selectedMeme && (
-                <MemeDetailModal
-                    meme={selectedMeme}
-                    onClose={closeModal}
-                    onVote={handleVote}
-                    onFavoriteToggle={handleFavoriteToggle}
-                />
-            )}
+            {isModalOpen && selectedMeme && ( <MemeDetailModal meme={selectedMeme} onClose={closeModal} onVote={handleVote} onFavoriteToggle={handleFavoriteToggle} /> )}
         </div>
     );
 }

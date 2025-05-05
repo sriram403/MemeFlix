@@ -1,7 +1,8 @@
+// frontend/src/pages/LoginPage.jsx
 import React, { useState } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
-import './AuthForm.css';
+import './AuthForm.css'; // Reuse styles
 
 function LoginPage() {
     const [username, setUsername] = useState('');
@@ -11,26 +12,28 @@ function LoginPage() {
     const { login } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
-    const from = location.state?.from?.pathname || "/"; // Get redirect location
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const from = location.state?.from?.pathname || "/"; // Redirect destination
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
         setError('');
         setLoading(true);
         const result = await login(username, password);
         setLoading(false);
         if (result.success) {
-            navigate(from, { replace: true }); // Redirect to intended page or home
+            navigate(from, { replace: true }); // Redirect after successful login
         } else {
-            setError(result.error || 'Login failed. Please check credentials.');
+            setError(result.error || 'Failed to log in. Please check your credentials.');
         }
     };
 
     return (
         <div className="auth-page">
             <form className="auth-form" onSubmit={handleSubmit}>
-                <h2>Login to Memeflix</h2>
-                {error && <p className="error-message">{error}</p>}
+                <h2>Log In</h2>
+                {/* Add role="alert" */}
+                {error && <div className="error-message" role="alert">{error}</div>}
                 <div className="form-group">
                     <label htmlFor="username">Username</label>
                     <input
@@ -39,7 +42,7 @@ function LoginPage() {
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         required
-                        autoComplete="username"
+                        autoComplete='username'
                     />
                 </div>
                 <div className="form-group">
@@ -50,15 +53,15 @@ function LoginPage() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        autoComplete="current-password"
+                        autoComplete='current-password'
                     />
                 </div>
                 <button type="submit" disabled={loading}>
-                    {loading ? 'Logging in...' : 'Login'}
+                    {loading ? 'Logging In...' : 'Log In'}
                 </button>
-                <p className="auth-switch">
-                    Don't have an account? <Link to="/register">Register here</Link>
-                </p>
+                <div className="auth-switch">
+                    New to Memeflix? <Link to="/register">Sign up now</Link>.
+                </div>
             </form>
         </div>
     );

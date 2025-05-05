@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import MemeGrid from '../components/MemeGrid';
 import MemeDetailModal from '../components/MemeDetailModal';
-import Spinner from '../components/Spinner'; // Import Spinner
+import Spinner from '../components/Spinner';
 import { useAuth, axiosInstance } from '../contexts/AuthContext';
 import './MyListPage.css';
 
@@ -10,12 +10,11 @@ const API_BASE_URL = 'http://localhost:3001';
 
 function MyListPage() {
     const [favoriteMemes, setFavoriteMemes] = useState([]);
-    const [loading, setLoading] = useState(true); // Loading state for favorites list
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selectedMeme, setSelectedMeme] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    // Include loadingViewed from context
     const { isAuthenticated, addFavorite, removeFavorite, isFavorite, loadingFavorites, recordView, isViewed, loadingViewed } = useAuth();
 
     // Fetch favorite memes (Unchanged)
@@ -32,31 +31,29 @@ function MyListPage() {
     // Favorite Toggle Handler (Unchanged)
     const handleFavoriteToggle = useCallback(async (memeId) => { if (!isAuthenticated || loadingFavorites) return; const currentlyFavorite = isFavorite(memeId); if (currentlyFavorite) { const originalMemes = [...favoriteMemes]; setFavoriteMemes(prevMemes => prevMemes.filter(m => m.id !== memeId)); if (selectedMeme?.id === memeId) { closeModal(); } const success = await removeFavorite(memeId); if (!success) { setFavoriteMemes(originalMemes); alert("Failed to remove from list. Please try again."); } } else { console.warn("Attempted to add favorite from My List page?"); } }, [isAuthenticated, loadingFavorites, isFavorite, removeFavorite, favoriteMemes, selectedMeme?.id, closeModal]);
 
-    // Combine loading states for the grid
     const isGridLoading = loading || loadingViewed;
 
     return (
         <div className="my-list-page">
             <h1>My List</h1>
 
-            {/* Use Spinner or show error */}
+            {/* Add role="alert" to error message */}
             {isGridLoading && <Spinner size="large" message="Loading your list..." />}
             {!isGridLoading && error && <div className="error-message" role="alert">{error}</div>}
 
-            {/* Render grid only when not loading and no error */}
             {!isGridLoading && !error && (
                 <MemeGrid
                     memes={favoriteMemes}
-                    loading={false} // Loading handled above
-                    error={null}    // Error handled above
+                    loading={false}
+                    error={null}
                     onMemeClick={openModal}
                     onVote={handleVote}
                     onFavoriteToggle={handleFavoriteToggle}
-                    isMemeViewed={(memeId) => isViewed(memeId)} // No need to check loadingViewed here
+                    isMemeViewed={(memeId) => isViewed(memeId)}
                 />
             )}
 
-            {/* Message if list is empty */}
+            {/* Add role="status" to info message */}
              {!isGridLoading && !error && favoriteMemes.length === 0 && (
                  <div className="info-message" role="status">Your list is empty. Add some memes!</div>
              )}
