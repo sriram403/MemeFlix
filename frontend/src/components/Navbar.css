@@ -1,6 +1,8 @@
 /* frontend/src/components/Navbar.css */
 .navbar {
-  background-image: linear-gradient(to bottom, #1a1a1a, var(--primary-dark-bg));
+  background-image: linear-gradient(to bottom, rgba(26, 26, 26, 0.95), rgba(20, 20, 20, 0.85)); /* Slightly transparent */
+  backdrop-filter: blur(5px); /* Add blur effect if desired */
+  -webkit-backdrop-filter: blur(5px);
   padding: 10px 5%;
   color: var(--text-primary);
   display: flex;
@@ -10,80 +12,159 @@
   position: sticky;
   top: 0;
   z-index: 900;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); /* Slightly stronger shadow */
+  transition: background-color 0.3s ease; /* Smooth transition if bg changes */
 }
 
 .navbar-brand a {
-  font-size: 1.6em; font-weight: bold; color: var(--accent-red);
-  text-shadow: 0 0 5px var(--accent-red-glow); text-decoration: none;
+  font-size: 1.6em;
+  font-weight: bold;
+  color: var(--accent-red);
+  text-shadow: 0 0 5px var(--accent-red-glow);
+  text-decoration: none;
+  border-radius: 2px; /* For focus outline */
+  transition: opacity 0.2s ease; /* Add transition */
+}
+.navbar-brand a:hover, .navbar-brand a:focus-visible {
+  opacity: 0.85; /* Slight fade on hover/focus */
+}
+/* Focus style inherited from index.css */
+
+.navbar-search {
+  display: flex;
+  align-items: center;
 }
 
-.navbar-search { display: flex; align-items: center; }
+.navbar-search form {
+    display: flex; /* Ensure form itself is flex */
+}
 
 .navbar-search input {
-  padding: 8px 12px; background-color: rgba(0, 0, 0, 0.5); border: 1px solid var(--border-color);
-  color: var(--text-light); border-radius: 3px; margin-right: 8px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  padding: 8px 12px;
+  background-color: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border-color);
+  color: var(--text-light);
+  border-radius: 3px 0 0 3px; /* Connect to button */
+  margin-right: 0; /* Remove margin */
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  min-width: 200px; /* Give it a minimum width */
 }
-.navbar-search input:focus { border-color: var(--accent-red); box-shadow: 0 0 8px var(--accent-red-glow); outline: none; }
-.navbar-search input::placeholder { color: var(--text-secondary); }
+/* Focus styles inherited, but override border-radius if needed on focus */
+.navbar-search input:focus-visible {
+    border-radius: 3px 0 0 3px; /* Maintain shape on focus */
+    z-index: 1; /* Bring input above button border on focus */
+    position: relative;
+}
+.navbar-search input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.8;
+}
 
 .navbar-search button {
-  padding: 8px 15px; background-color: var(--accent-red); color: white; border: none; border-radius: 3px;
-  cursor: pointer; font-size: 0.9em; transition: background-color 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 0 0px transparent;
+  padding: 8px 15px;
+  background-color: var(--accent-red);
+  color: white;
+  border: 1px solid var(--accent-red); /* Add border */
+  border-radius: 0 3px 3px 0; /* Connect to input */
+  margin-left: -1px; /* Overlap border */
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: none; /* Remove default shadow */
 }
-.navbar-search button:hover { background-color: #f40612; box-shadow: 0 0 10px 2px var(--accent-red-glow); }
+.navbar-search button:hover {
+  background-color: var(--accent-red-hover);
+  border-color: var(--accent-red-hover);
+  box-shadow: 0 0 8px 1px var(--accent-red-glow); /* Subtle glow */
+  transform: none; /* Override general button lift */
+}
+/* Focus style for search button */
+.navbar-search button:focus-visible {
+    outline: 2px solid var(--focus-outline-color);
+    outline-offset: 1px;
+    border-color: var(--focus-outline-color);
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.6);
+    z-index: 1; /* Bring above input border */
+    position: relative;
+}
 
-.navbar-links { display: flex; align-items: center; gap: 25px; }
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+}
 
 /* Standard link style */
 .navbar-links a {
-  color: var(--text-secondary); text-decoration: none; font-size: 1em;
-  transition: color 0.2s ease, text-shadow 0.2s ease, transform 0.1s ease;
-  display: flex; /* Align icon and text if needed */
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 1em;
+  transition: color 0.2s ease, text-shadow 0.2s ease, transform 0.1s ease, opacity 0.2s ease;
+  display: flex;
   align-items: center;
+  padding: 4px 0; /* Add slight padding for focus offset */
 }
 .navbar-links a:hover {
   color: var(--text-light);
-  text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+  opacity: 0.9;
 }
+/* Focus style inherited */
 
-/* --- Styles for "My List" Link --- */
+/* My List Link */
 .navbar-my-list-link {
-    /* Keep standard link styles */
-    gap: 6px; /* Space between icon and text */
-    padding: 5px 8px; /* Add some padding */
-    border-radius: 4px; /* Optional rounded background */
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
 }
 .navbar-my-list-link:hover {
-    /* Optional: Slight background on hover */
-    /* background-color: rgba(255, 255, 255, 0.1); */
-    text-shadow: none; /* Remove general text-shadow if interfering */
-    color: var(--text-light); /* Ensure text brightens */
+    background-color: rgba(255, 255, 255, 0.05);
+    text-shadow: none;
+    color: var(--text-light);
+    opacity: 1;
 }
 .my-list-icon {
-    font-size: 1.2em; /* Adjust icon size */
+    font-size: 1.2em;
     line-height: 1;
-    color: var(--accent-red); /* Make icon always red for visibility */
+    color: var(--accent-red);
     transition: transform 0.2s ease;
 }
 .my-list-text {
-    font-size: 0.9em; /* Slightly smaller text */
+    font-size: 0.9em;
     font-weight: 500;
 }
 .navbar-my-list-link:hover .my-list-icon {
-    transform: scale(1.2); /* Animate icon on hover */
+    transform: scale(1.15);
 }
-/* --- End My List Link Styles --- */
+/* Focus style */
+.navbar-my-list-link:focus-visible {
+     background-color: rgba(255, 255, 255, 0.1);
+     outline-offset: 1px; /* Adjust offset */
+}
 
-.navbar-username { color: var(--text-primary); font-weight: 500; }
+
+.navbar-username {
+  color: var(--text-primary);
+  font-weight: 500;
+  margin-left: 10px; /* Add some space */
+}
 
 .logout-button {
-    background: none; border: 1px solid var(--text-secondary); color: var(--text-secondary);
-    padding: 6px 12px; font-size: 0.9em; cursor: pointer; border-radius: 4px; transition: all 0.2s ease;
+    background: none;
+    border: 1px solid var(--text-secondary);
+    color: var(--text-secondary);
+    padding: 6px 12px;
+    font-size: 0.9em;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
 }
 .logout-button:hover {
-    background-color: var(--secondary-dark-bg); color: var(--text-light); border-color: var(--text-light);
+    background-color: var(--secondary-dark-bg);
+    color: var(--text-light);
+    border-color: var(--text-light);
     box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px); /* Match button lift */
 }
+/* Focus style inherited */

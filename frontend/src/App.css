@@ -1,24 +1,55 @@
+/* frontend/src/App.css */
 .App {
   width: 100%;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  flex-grow: 1;
+  /* flex-grow: 1; <-- Redundant with min-height/display:flex */
   background: var(--dark-gradient);
+  position: relative; /* Needed for absolute positioning context if footer needs fixing */
 }
 
 main {
-  flex-grow: 1;
+  flex-grow: 1; /* Ensure main content area takes available space */
   width: 100%;
+  /* Add some default vertical padding? Optional */
+  /* padding-top: 30px; */
+  /* padding-bottom: 30px; */
 }
 
 footer {
   background-color: var(--primary-dark-bg);
   color: var(--text-secondary);
-  padding: 15px 5%;
+  padding: 20px 5%; /* Slightly more padding */
   text-align: center;
-  font-size: 0.8em;
+  font-size: 0.85em; /* Slightly larger font */
   border-top: 1px solid var(--border-color);
   width: 100%;
-  margin-top: 40px;
+  margin-top: 40px; /* Space above footer */
+  flex-shrink: 0; /* Prevent footer from shrinking */
+}
+
+/* Refined Loading Placeholder */
+.loading-fullscreen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-size: 1.5em;
+    color: var(--text-secondary);
+    background-color: var(--primary-dark-bg); /* Match dark bg */
+    /* Add a subtle animation */
+    /* Example: */
+    /*
+    &::after {
+        content: '...';
+        display: inline-block;
+        animation: ellipsis 1.5s infinite;
+    }
+    @keyframes ellipsis {
+        0%, 20% { content: '.'; }
+        40% { content: '..'; }
+        60%, 100% { content: '...'; }
+    }
+    */
 }

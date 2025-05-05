@@ -1,13 +1,16 @@
+/* frontend/src/index.css */
 :root {
   --primary-dark-bg: #141414;
   --secondary-dark-bg: #1f1f1f;
   --card-bg: #2a2a2a;
   --accent-red: #e50914;
+  --accent-red-hover: #f40612;
   --accent-red-glow: rgba(229, 9, 20, 0.6);
   --text-primary: #e5e5e5;
   --text-secondary: #aaa;
   --text-light: #ffffff;
   --border-color: #303030;
+  --focus-outline-color: #007bff; /* A distinct focus color */
   --shadow-color-light: rgba(0, 0, 0, 0.3);
   --shadow-color-heavy: rgba(0, 0, 0, 0.5);
   --dark-gradient: linear-gradient(180deg, #181818 0%, #101010 100%);
@@ -26,22 +29,141 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { min-width: 320px; min-height: 100vh; background: var(--dark-gradient); }
-#root { width: 100%; min-height: 100vh; display: flex; flex-direction: column; }
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-a { font-weight: 500; color: var(--text-secondary); text-decoration: inherit; transition: color 0.2s ease; }
-a:hover { color: var(--accent-red); }
+html {
+    scroll-behavior: smooth; /* Add smooth scrolling */
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--dark-gradient);
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+a {
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none; /* Remove default underline */
+  transition: color 0.2s ease;
+  border-radius: 2px; /* Add subtle radius for focus outline */
+}
+a:hover {
+  color: var(--text-light);
+  text-decoration: underline; /* Add underline on hover */
+}
+/* Improved focus style for links */
+a:focus-visible {
+    outline: 2px solid var(--focus-outline-color);
+    outline-offset: 2px;
+    color: var(--text-light);
+}
+
 
 button {
-  border-radius: 4px; border: 1px solid transparent; padding: 0.6em 1.2em; font-size: 1em; font-weight: 500; font-family: inherit;
-  background-color: var(--secondary-dark-bg); color: var(--text-primary); cursor: pointer;
-  transition: border-color 0.25s, background-color 0.2s ease, box-shadow 0.2s ease;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: var(--secondary-dark-bg);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color 0.25s, background-color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
 }
-button:hover:not(:disabled) { border-color: var(--accent-red); box-shadow: 0 0 8px var(--accent-red-glow); }
-button:focus, button:focus-visible { outline: 4px auto -webkit-focus-ring-color; }
-button:disabled { background-color: #333; color: #777; cursor: not-allowed; border-color: #444; box-shadow: none; }
+button:hover:not(:disabled) {
+  border-color: var(--accent-red);
+  box-shadow: 0 0 8px var(--accent-red-glow);
+  transform: translateY(-1px); /* Subtle lift effect */
+}
+/* Use focus-visible for keyboard navigation focus */
+button:focus-visible {
+    outline: 2px solid var(--focus-outline-color);
+    outline-offset: 2px;
+    border-color: var(--focus-outline-color); /* Change border too */
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.6); /* Focus glow */
+}
+/* Remove default focus outline if using focus-visible */
+button:focus {
+    outline: none;
+}
 
-.loading-fullscreen {
-    display: flex; justify-content: center; align-items: center; min-height: 100vh; font-size: 1.5em; color: var(--text-secondary);
+button:disabled {
+  background-color: #333;
+  color: #777;
+  cursor: not-allowed;
+  border-color: #444;
+  box-shadow: none;
+  transform: none;
 }
+
+/* Basic Input Styling (can be overridden) */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+select {
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    background-color: #333;
+    color: var(--text-light);
+    padding: 0.6em 0.8em;
+    font-size: 1em;
+    font-family: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+input[type="text"]::placeholder,
+input[type="email"]::placeholder,
+input[type="password"]::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.8;
+}
+input:focus-visible,
+select:focus-visible {
+     outline: 2px solid var(--focus-outline-color);
+     outline-offset: 1px;
+     border-color: var(--focus-outline-color);
+     background-color: #404040;
+     box-shadow: 0 0 5px rgba(0, 123, 255, 0.6);
+}
+input:focus,
+select:focus {
+    outline: none; /* Remove default */
+}
+
+
+/* Base loading/error messages */
+.loading-fullscreen, .loading-page, .loading-row, .error-message, .info-message, .empty-history-message {
+    padding: 40px 20px; /* Consistent padding */
+    text-align: center;
+    font-size: 1.2em; /* Slightly adjusted size */
+    color: var(--text-secondary);
+    min-height: 150px; /* Consistent min height */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 4px; /* Subtle rounding */
+    background-color: rgba(0,0,0, 0.1); /* Faint background */
+    margin: 20px 5%; /* Add some margin */
+}
+.loading-fullscreen { min-height: 100vh; margin: 0; border-radius: 0; }
+.error-message {
+    color: #ff8a8a; /* Lighter red for dark bg */
+    background-color: rgba(229, 9, 20, 0.15); /* Slightly more visible red bg */
+    border: 1px solid rgba(229, 9, 20, 0.4);
+    font-weight: 500;
+}
+/* Add ARIA role in JSX/HTML */
+/* [role="alert"] { ... } */
+/* [role="status"] { ... } */

@@ -1,58 +1,92 @@
 /* frontend/src/components/MemeCard.css */
 .meme-card {
-  background-color: var(--card-bg); border-radius: 5px; overflow: hidden; margin: 10px;
-  box-shadow: 0 5px 10px var(--shadow-color-light); cursor: pointer; display: flex;
-  flex-direction: column; transition: transform 0.2s ease-in-out, box-shadow 0.3s ease-in-out, border-left-color 0.3s ease;
+  background-color: var(--card-bg);
+  border-radius: 5px;
+  overflow: hidden;
+  /* margin: 10px; <-- Margin is handled by grid/row gap */
+  box-shadow: 0 5px 10px var(--shadow-color-light);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease-in-out, box-shadow 0.3s ease-in-out, border-left-color 0.3s ease;
   border-left: 3px solid transparent;
-  position: relative; /* Needed for overlay */
+  position: relative; /* Needed for overlay/icons */
 }
 
 /* --- Default Hover --- */
-.meme-card:not(.meme-card--viewed):hover {
+/* Apply hover styles only when focus is NOT visible within the card */
+.meme-card:not(.meme-card--viewed):hover:not(:focus-within) {
   transform: scale(1.04);
   box-shadow: 0 15px 30px var(--shadow-color-heavy), 0 0 20px 5px var(--accent-red-glow);
   border-left-color: var(--accent-red);
 }
 
+/* --- Focus State --- */
+/* Apply focus styles when the card itself or an element inside it is focused */
+.meme-card:focus-within {
+    outline: 2px solid var(--focus-outline-color);
+    outline-offset: 2px;
+    box-shadow: 0 8px 20px var(--shadow-color-heavy), 0 0 10px 3px rgba(0, 123, 255, 0.6); /* Focus glow */
+    transform: scale(1.02); /* Slight scale on focus */
+    border-left-color: var(--focus-outline-color);
+}
+/* Remove default outline from children when card is focused */
+.meme-card:focus-within *:focus {
+    outline: none;
+}
+
+
 .meme-card-media {
-  width: 100%; aspect-ratio: 16 / 9; /* Common aspect ratio */
-  background-color: var(--primary-dark-bg); display: flex;
-  justify-content: center; align-items: center; overflow: hidden;
-  position: relative; /* For positioning overlay and icons */
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-color: var(--primary-dark-bg);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
 }
 .meme-card-media img, .meme-card-media video {
-  display: block; width: 100%; height: 100%; object-fit: cover;
-  transition: filter 0.3s ease; /* For potential grayscale effect */
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: filter 0.3s ease, transform 0.3s ease; /* Added transform transition */
 }
+/* Optional: Slight zoom effect on media hover */
+.meme-card:hover .meme-card-media img,
+.meme-card:hover .meme-card-media video {
+    /* transform: scale(1.03); */ /* Subtle zoom - disable if too much */
+}
+
 
 /* --- Viewed State Styles --- */
 .meme-card--viewed {
-    /* Optionally slightly dim the whole card */
-    /* opacity: 0.85; */
+    /* No permanent style change needed with overlay/icon */
 }
 
 .meme-card--viewed .meme-card-media::after {
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    background-color: rgba(0, 0, 0, 0.3); /* Dark overlay */
-    z-index: 2; /* Above media, below icons */
-    pointer-events: none; /* Don't block clicks */
+    background-color: rgba(0, 0, 0, 0.35); /* Slightly darker overlay */
+    z-index: 2;
+    pointer-events: none;
     opacity: 1;
     transition: opacity 0.3s ease;
 }
 
-/* Optional: Fade out overlay on hover for viewed items */
+/* Fade out overlay on hover for viewed items */
 .meme-card--viewed:hover .meme-card-media::after {
-     opacity: 0;
+     opacity: 0.1; /* Don't completely remove? */
 }
 
 /* --- Modified Hover for Viewed Items --- */
-.meme-card--viewed:hover {
-  transform: scale(1.04); /* Keep scale */
-  /* Use a different glow/border */
-  box-shadow: 0 15px 30px var(--shadow-color-heavy), 0 0 15px 3px rgba(150, 150, 150, 0.5); /* Grayish glow */
-  border-left-color: var(--text-secondary); /* Gray border */
+/* Apply hover styles only when focus is NOT visible within the card */
+.meme-card--viewed:hover:not(:focus-within) {
+  transform: scale(1.04);
+  box-shadow: 0 15px 30px var(--shadow-color-heavy), 0 0 15px 3px rgba(150, 150, 150, 0.5);
+  border-left-color: var(--text-secondary);
 }
 
 /* --- Checkmark Indicator --- */
@@ -60,8 +94,8 @@
     position: absolute;
     bottom: 8px;
     left: 8px;
-    z-index: 5; /* Above overlay */
-    background-color: rgba(10, 180, 10, 0.7); /* Green background */
+    z-index: 5;
+    background-color: rgba(10, 180, 10, 0.75); /* Slightly more opaque */
     color: white;
     border-radius: 50%;
     width: 22px;
@@ -72,19 +106,23 @@
     font-size: 0.9em;
     font-weight: bold;
     line-height: 1;
-    pointer-events: none; /* Don't interfere with clicks */
+    pointer-events: none;
     box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    opacity: 0.8; /* Slightly transparent */
+    transition: opacity 0.2s ease;
+}
+.meme-card:hover .viewed-indicator {
+    opacity: 1; /* Fully opaque on hover */
 }
 
-
-/* --- Info & Actions Section (Unchanged) --- */
+/* --- Info & Actions Section --- */
 .meme-card-info {
   padding: 10px 12px;
   background-image: linear-gradient(to bottom, #252525, var(--card-bg));
   min-height: 65px;
   display: flex; flex-direction: column; justify-content: space-between;
   border-top: 1px solid var(--border-color);
-  z-index: 1; /* Ensure info is above potential card background effects */
+  z-index: 1;
 }
 .meme-card-title {
   color: var(--text-primary); font-size: 0.9em; font-weight: 500; margin: 0 0 8px 0;
@@ -102,6 +140,7 @@
   font-weight: 500;
   padding: 4px 0;
   cursor: help;
+  transition: color 0.2s ease;
 }
 .score.floompers-score:hover {
     color: var(--text-primary);
