@@ -2,21 +2,25 @@
 import React from 'react';
 import './MemeGrid.css';
 import MemeCard from './MemeCard';
+import Spinner from './Spinner'; // Import Spinner
 
-// Accept isMemeViewed function prop
 function MemeGrid({ memes, loading, error, onMemeClick, onVote, onFavoriteToggle, isMemeViewed }) {
 
+  // *** Use Spinner component for loading state ***
   if (loading) {
-    return <div className="loading">Loading memes...</div>;
+    // Optionally add a message to the spinner
+    return <Spinner size="large" message="Loading memes..." />;
   }
 
   if (error) {
-    return <div className="error-message">Error: {error}</div>;
+    // Keep error message as text, but add ARIA role
+    return <div className="error-message" role="alert">Error: {error}</div>;
   }
 
   if (!memes || memes.length === 0) {
       if (!loading && !error) {
-         return <div className="info-message">No memes found matching your criteria.</div>;
+         // Keep info message as text
+         return <div className="info-message" role="status">No memes found matching your criteria.</div>;
       }
       return null;
   }
@@ -29,9 +33,8 @@ function MemeGrid({ memes, loading, error, onMemeClick, onVote, onFavoriteToggle
              key={meme.id}
              meme={meme}
              onCardClick={onMemeClick}
-             onVote={onVote} // Pass vote handler (if needed for future card actions)
+             onVote={onVote}
              onFavoriteToggle={onFavoriteToggle}
-             // *** Pass the result of isMemeViewed for this specific meme ***
              isViewed={isMemeViewed ? isMemeViewed(meme.id) : false}
            />
          ))}

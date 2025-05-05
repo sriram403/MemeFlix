@@ -1,9 +1,9 @@
 // frontend/src/components/MemeRow.jsx
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import MemeCard from './MemeCard';
+import Spinner from './Spinner'; // Import Spinner
 import './MemeRow.css';
 
-// Accept isMemeViewed function prop
 function MemeRow({ title, memes, isLoading, onMemeClick, onFavoriteToggle, isMemeViewed }) {
     const rowRef = useRef(null);
     const [showLeftArrow, setShowLeftArrow] = useState(false);
@@ -46,17 +46,22 @@ function MemeRow({ title, memes, isLoading, onMemeClick, onFavoriteToggle, isMem
         }
     };
 
+    // *** Use Spinner component for loading state ***
     if (isLoading) {
         return (
             <div className="meme-row-container">
                 <h2 className="meme-row-title">{title}</h2>
-                <div className="loading-row">Loading...</div>
+                {/* Use Spinner instead of text */}
+                <div className="loading-row-placeholder"> {/* Optional wrapper */}
+                    <Spinner size="medium" />
+                </div>
             </div>
         );
     }
 
+    // Don't render if no memes and not loading
     if (!memes || memes.length === 0) {
-        return null;
+        return null; // Or return an empty message specific to the row if desired
     }
 
     return (
@@ -81,7 +86,6 @@ function MemeRow({ title, memes, isLoading, onMemeClick, onFavoriteToggle, isMem
                             meme={meme}
                             onCardClick={onMemeClick}
                             onFavoriteToggle={onFavoriteToggle}
-                            // *** Pass the result of isMemeViewed for this specific meme ***
                             isViewed={isMemeViewed ? isMemeViewed(meme.id) : false}
                         />
                     ))}

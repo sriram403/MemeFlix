@@ -5,6 +5,7 @@ import MemeRow from '../components/MemeRow';
 import MemeDetailModal from '../components/MemeDetailModal';
 import HeroBanner from '../components/HeroBanner';
 import SearchControls from '../components/SearchControls';
+import Spinner from '../components/Spinner'; // Import Spinner
 import { useAuth, axiosInstance } from '../contexts/AuthContext';
 import './HomePage.css';
 
@@ -14,7 +15,7 @@ function HomePage() {
     const [featuredMeme, setFeaturedMeme] = useState(null);
     const [loadingFeatured, setLoadingFeatured] = useState(true);
     const [popularTags, setPopularTags] = useState([]);
-    const [tagMemes, setTagMemes] = useState({}); // Stores { tagName: [memes] }
+    const [tagMemes, setTagMemes] = useState({});
     const [loadingTags, setLoadingTags] = useState(true);
     const [loadingTagMemes, setLoadingTagMemes] = useState({});
     const [error, setError] = useState(null);
@@ -34,110 +35,78 @@ function HomePage() {
     useEffect(() => { const fetchTags = async () => { setLoadingTags(true); try { const response = await axiosInstance.get(`${API_BASE_URL}/api/tags/popular`, { params: { limit: 7 } }); setPopularTags(response.data?.popularTags || []); } catch (err) { console.error("Error fetching popular tags:", err); setError(prev => prev || "Could not load tag categories."); setPopularTags([]); } finally { setLoadingTags(false); } }; fetchTags(); }, [axiosInstance]);
     useEffect(() => { if (popularTags.length === 0) return; popularTags.forEach(tagInfo => { const tagName = tagInfo.tag; if (!tagMemes[tagName] && !loadingTagMemes[tagName]) { setLoadingTagMemes(prev => ({ ...prev, [tagName]: true })); axiosInstance.get(`${API_BASE_URL}/api/memes/by-tag/${encodeURIComponent(tagName)}`, { params: { limit: 10 } }).then(response => { setTagMemes(prev => ({ ...prev, [tagName]: response.data?.memes || [] })); }).catch(err => { console.error(`Error fetching memes for tag "${tagName}":`, err); setTagMemes(prev => ({ ...prev, [tagName]: [] })); }).finally(() => { setLoadingTagMemes(prev => ({ ...prev, [tagName]: false })); }); } }); }, [popularTags, axiosInstance, tagMemes, loadingTagMemes]);
 
-    // Event Handlers
-    const openModal = (meme) => { setSelectedMeme(meme); setIsModalOpen(true); recordView(meme.id); };
-    const closeModal = () => { setIsModalOpen(false); setSelectedMeme(null); };
-
-    // *** UPDATED handleVote ***
-    const handleVote = useCallback(async (memeId, voteType) => {
-        if (!isAuthenticated) {
-            alert("Please log in to vote.");
-            return;
-        }
-
-        // Store original states for potential revert
-        const originalTagMemes = {...tagMemes}; // Shallow copy is fine here
-        const originalSelectedMeme = selectedMeme ? {...selectedMeme} : null;
-
-        // --- Optimistic UI Update ---
-        // 1. Update the specific tag row state in 'tagMemes'
-        let updated = false;
-        const newTagMemes = { ...tagMemes };
-        for (const tagName in newTagMemes) {
-            const updatedList = newTagMemes[tagName].map(m => {
-                if (m.id === memeId) {
-                    updated = true; // Mark that we found and updated the meme
-                    const currentUpvotes = m.upvotes ?? 0;
-                    const currentDownvotes = m.downvotes ?? 0;
-                    return {
-                        ...m,
-                        upvotes: voteType === 'upvote' ? currentUpvotes + 1 : currentUpvotes,
-                        downvotes: voteType === 'downvote' ? currentDownvotes + 1 : currentDownvotes,
-                    };
-                }
-                return m;
-            });
-            newTagMemes[tagName] = updatedList;
-        }
-        if (updated) {
-            setTagMemes(newTagMemes); // Update state only if meme was found in rows
-        }
-
-
-        // 2. Update the 'selectedMeme' state if the voted meme is open in the modal
-        if (selectedMeme?.id === memeId) {
-             setSelectedMeme(prev => {
-                 if (!prev) return null;
-                 const currentUpvotes = prev.upvotes ?? 0;
-                 const currentDownvotes = prev.downvotes ?? 0;
-                 return {
-                    ...prev,
-                    upvotes: voteType === 'upvote' ? currentUpvotes + 1 : currentUpvotes,
-                    downvotes: voteType === 'downvote' ? currentDownvotes + 1 : currentDownvotes,
-                 }
-             });
-        }
-        // --- End Optimistic UI Update ---
-
-
-        // --- API Call ---
-        try {
-            await axiosInstance.post(`${API_BASE_URL}/api/memes/${memeId}/${voteType}`);
-            // Success: Optimistic update stays
-        } catch (err) {
-            // --- Revert UI on Error ---
-            console.error(`Error ${voteType}ing meme:`, err);
-            setError(`Failed to record ${voteType}. Please try again.`); // Show error message
-            setTagMemes(originalTagMemes); // Revert the tag rows state
-            if (originalSelectedMeme && selectedMeme?.id === memeId) {
-                 setSelectedMeme(originalSelectedMeme); // Revert the modal state
-            }
-            // --- End Revert UI ---
-        }
-    // Depend on states needed for update/revert
-    }, [isAuthenticated, tagMemes, selectedMeme, axiosInstance]); // Add tagMemes
-
+    // Event Handlers (Unchanged)
+    const openModal = useCallback((meme) => { setSelectedMeme(meme); setIsModalOpen(true); recordView(meme.id); }, [recordView]);
+    const closeModal = useCallback(() => { setIsModalOpen(false); setSelectedMeme(null); }, []);
+    const handleVote = useCallback(async (memeId, voteType) => { if (!isAuthenticated) { alert("Please log in to vote."); return; } const originalTagMemes = {...tagMemes}; const originalSelectedMeme = selectedMeme ? {...selectedMeme} : null; let updated = false; const newTagMemes = { ...tagMemes }; for (const tagName in newTagMemes) { const updatedList = newTagMemes[tagName].map(m => { if (m.id === memeId) { updated = true; const cu = m.upvotes ?? 0; const cd = m.downvotes ?? 0; return { ...m, upvotes: voteType === 'upvote' ? cu + 1 : cu, downvotes: voteType === 'downvote' ? cd + 1 : cd }; } return m; }); newTagMemes[tagName] = updatedList; } if (updated) { setTagMemes(newTagMemes); } if (selectedMeme?.id === memeId) { setSelectedMeme(prev => { if (!prev) return null; const cu = prev.upvotes ?? 0; const cd = prev.downvotes ?? 0; return { ...prev, upvotes: voteType === 'upvote' ? cu + 1 : cu, downvotes: voteType === 'downvote' ? cd + 1 : cd } }); } try { await axiosInstance.post(`${API_BASE_URL}/api/memes/${memeId}/${voteType}`); } catch (err) { console.error(`Error ${voteType}ing meme:`, err); setError(`Failed to record ${voteType}.`); setTagMemes(originalTagMemes); if (originalSelectedMeme && selectedMeme?.id === memeId) { setSelectedMeme(originalSelectedMeme); } } }, [isAuthenticated, tagMemes, selectedMeme, axiosInstance]);
     const handleFavoriteToggle = useCallback(async (memeId) => { if (!isAuthenticated || loadingFavorites) return; const currentlyFavorite = isFavorite(memeId); const action = currentlyFavorite ? removeFavorite : addFavorite; const success = await action(memeId); if (success && featuredMeme?.id === memeId) { setFeaturedMeme(prev => ({...prev})); } }, [isAuthenticated, loadingFavorites, isFavorite, addFavorite, removeFavorite, featuredMeme?.id]);
     const handleSearchRedirect = (params) => { const searchParams = new URLSearchParams(params); navigate(`/browse?${searchParams.toString()}`); };
     const handleFilterChange = (newType) => { handleSearchRedirect({ type: newType, sort: initialSortBy }); };
     const handleSortChange = (newSort) => { handleSearchRedirect({ type: initialFilterType, sort: newSort }); };
 
-    // Render Logic (Unchanged)
-    if (error && !featuredMeme && popularTags.length === 0 && !loadingTags && !loadingFeatured) { return <div className="error-page">{error}</div>; }
-    if (loadingFeatured || (loadingTags && popularTags.length === 0)) { return <div className="loading-page">Loading Memeflix...</div>; }
+    // --- Render Logic ---
+
+    // Show main loading spinner if featured content OR tags are initially loading
+    if (loadingFeatured || (loadingTags && popularTags.length === 0)) {
+         // Use Spinner component for initial load
+         return (
+            <div className="loading-page-container"> {/* Optional wrapper */}
+                 <Spinner size="large" message="Loading Memeflix..." />
+            </div>
+         );
+    }
+
+    // Show error only if nothing could be loaded at all
+    if (error && !featuredMeme && popularTags.length === 0) {
+        return <div className="error-page">{error}</div>; // Keep text for error message
+    }
+
 
     return (
         <div className="home-page">
-            {featuredMeme ? ( <HeroBanner featuredMeme={featuredMeme} onPlayClick={openModal} onFavoriteToggle={handleFavoriteToggle} /> ) : ( !loadingFeatured && <div className="info-message">Could not load featured meme.</div> )}
-            <SearchControls currentFilterType={initialFilterType} currentSortBy={initialSortBy} onFilterChange={handleFilterChange} onSortChange={handleSortChange} showTagFilter={false} />
-            {loadingTags && <div className="loading-page">Loading categories...</div>}
+            {featuredMeme ? (
+                <HeroBanner
+                    featuredMeme={featuredMeme}
+                    onPlayClick={openModal}
+                    onFavoriteToggle={handleFavoriteToggle}
+                />
+            ) : (
+                 // Show spinner *specifically* for featured if it's still loading but tags aren't
+                 loadingFeatured ? <Spinner size="medium" message="Loading featured meme..." /> :
+                 !error && <div className="info-message">Could not load featured meme.</div> // Show info if not loading and no other error
+            )}
+
+            <SearchControls
+                currentFilterType={initialFilterType}
+                currentSortBy={initialSortBy}
+                onFilterChange={handleFilterChange}
+                onSortChange={handleSortChange}
+                showTagFilter={false}
+            />
+
+            {/* Show specific spinner or error for tags if featured loaded but tags didn't */}
+            {loadingTags && !loadingFeatured && <Spinner size="medium" message="Loading categories..." />}
+            {!loadingTags && error && <div className="error-message">{error}</div>}
+
+
             {!loadingTags && popularTags.map(tagInfo => (
                 <MemeRow
                     key={tagInfo.tag}
                     title={`Popular in "${tagInfo.tag}"`}
                     memes={tagMemes[tagInfo.tag] || []}
+                    // Pass loading state down to MemeRow
                     isLoading={loadingTagMemes[tagInfo.tag] ?? true}
                     onMemeClick={openModal}
                     onFavoriteToggle={handleFavoriteToggle}
                     isMemeViewed={(memeId) => !loadingViewed && isViewed(memeId)}
                 />
             ))}
-             {!loadingTags && error && <div className="error-message">{error}</div>}
+
             {isModalOpen && selectedMeme && (
                 <MemeDetailModal
                     meme={selectedMeme}
                     onClose={closeModal}
-                    onVote={handleVote} // Pass the updated handler
+                    onVote={handleVote}
                     onFavoriteToggle={handleFavoriteToggle}
                 />
             )}
