@@ -20,142 +20,67 @@ axiosInstance.interceptors.request.use(
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [token, setToken] = useState(localStorage.getItem('memeflix_token'));
-    const [loading, setLoading] = useState(true); // Overall auth loading
+    const [loading, setLoading] = useState(true);
     const [favoriteIds, setFavoriteIds] = useState(new Set());
     const [loadingFavorites, setLoadingFavorites] = useState(false);
-    const [viewedIds, setViewedIds] = useState(new Set());
-    const [loadingViewed, setLoadingViewed] = useState(false);
-
-    // --- NEW: State for User Votes ---
-    // Stores votes as { memeId: voteTypeInt } e.g., { 13: 1, 25: -1 }
     const [userVotes, setUserVotes] = useState({});
-    const [loadingVotes, setLoadingVotes] = useState(false);
+    const [sessionViewedIds, setSessionViewedIds] = useState(new Set());
 
     // Fetch Favorites (Unchanged)
     const fetchFavoriteIds = useCallback(async () => { if (!token) { setFavoriteIds(new Set()); setLoadingFavorites(false); return; } setLoadingFavorites(true); try { const response = await axiosInstance.get('/api/favorites/ids'); setFavoriteIds(new Set(response.data.favoriteMemeIds || [])); } catch (error) { console.error("Failed to fetch favorite IDs:", error); setFavoriteIds(new Set());} finally { setLoadingFavorites(false); } }, [token]);
-    // Fetch Viewed IDs (Unchanged)
-    const fetchViewedIds = useCallback(async () => { if (!token) { setViewedIds(new Set()); setLoadingViewed(false); return; } setLoadingViewed(true); try { const response = await axiosInstance.get('/api/history', { params: { limit: 1000 } }); const ids = (response.data?.memes || []).map(meme => meme.id); setViewedIds(new Set(ids)); } catch (error) { console.error("Failed to fetch viewed IDs:", error); setViewedIds(new Set()); } finally { setLoadingViewed(false); } }, [token]);
 
-    // --- NEW: Fetch User Votes ---
-    // Need a new backend endpoint for this ideally: GET /api/votes
-    // For now, we can't easily fetch this without modifying meme endpoints.
-    // We will *infer* the vote state based on API call results in handleVote.
-    // TODO: Implement GET /api/votes endpoint and fetchUserVotes function.
-    // const fetchUserVotes = useCallback(async () => {
-    //     if (!token) { setUserVotes({}); setLoadingVotes(false); return; }
-    //     setLoadingVotes(true);
-    //     try {
-    //         // const response = await axiosInstance.get('/api/votes'); // Hypothetical endpoint
-    //         // setUserVotes(response.data.votes || {}); // Assuming format { memeId: voteType }
-    //     } catch (error) {
-    //         console.error("Failed to fetch user votes:", error);
-    //         setUserVotes({});
-    //     } finally {
-    //         setLoadingVotes(false);
-    //     }
-    // }, [token]);
+    // Logout handler (Unchanged)
+    const handleLogout = useCallback(() => { setToken(null); setUser(null); setFavoriteIds(new Set()); setSessionViewedIds(new Set()); setUserVotes({}); localStorage.removeItem('memeflix_token'); setLoading(false); }, []);
 
-    // Logout handler
-    const handleLogout = useCallback(() => {
-        setToken(null); setUser(null); setFavoriteIds(new Set());
-        setViewedIds(new Set()); setUserVotes({}); // Clear votes on logout
-        localStorage.removeItem('memeflix_token'); setLoading(false);
-    }, []);
+    // Effect to fetch user data and favorites (Unchanged)
+    useEffect(() => { if (token) { localStorage.setItem('memeflix_token', token); setLoading(true); axiosInstance.get('/api/auth/me').then(response => { setUser(response.data); Promise.all([ fetchFavoriteIds() ]).finally(() => { setLoading(false); }); }).catch(() => { handleLogout(); }); } else { handleLogout(); } }, [token, fetchFavoriteIds, handleLogout]);
 
-    // Effect to fetch user data and associated states
-    useEffect(() => {
-        if (token) {
-            localStorage.setItem('memeflix_token', token);
-            setLoading(true);
-            axiosInstance.get('/api/auth/me')
-                .then(response => {
-                    setUser(response.data);
-                    // Fetch favorites, viewed, and votes (when implemented)
-                    Promise.all([
-                        fetchFavoriteIds(),
-                        fetchViewedIds(),
-                        // fetchUserVotes() // Call when implemented
-                    ]).finally(() => {
-                        setLoading(false);
-                    });
-                })
-                .catch(() => { handleLogout(); });
-        } else { handleLogout(); }
-        // Add fetchUserVotes when implemented
-    }, [token, fetchFavoriteIds, fetchViewedIds, handleLogout]);
-
-    // Login/Register (Unchanged)
+    // Login/Register/Favorites (Unchanged)
     const login = async (username, password) => { try { const response = await axios.post(`${API_BASE_URL}/api/auth/login`, { username, password }); if (response.data.accessToken) { setToken(response.data.accessToken); return { success: true }; } } catch (error) { const msg = error.response?.data?.error || "Login failed"; console.error("Login failed:", msg); return { success: false, error: msg }; } return { success: false, error: "Login failed." }; };
     const register = async (username, email, password) => { try { await axios.post(`${API_BASE_URL}/api/auth/register`, { username, email, password }); return { success: true }; } catch (error) { const msg = error.response?.data?.error || "Register failed"; console.error("Register failed:", msg); return { success: false, error: msg }; } };
-    // Add/Remove Favorite (Unchanged)
     const addFavorite = useCallback(async (memeId) => { if (!user || loadingFavorites) return false; const originalFavorites = new Set(favoriteIds); setFavoriteIds(prev => new Set(prev).add(memeId)); try { await axiosInstance.post(`/api/favorites/${memeId}`); return true; } catch (error) { console.error("Failed to add favorite:", error); setFavoriteIds(originalFavorites); return false; } }, [user, favoriteIds, loadingFavorites]);
     const removeFavorite = useCallback(async (memeId) => { if (!user || loadingFavorites) return false; const originalFavorites = new Set(favoriteIds); setFavoriteIds(prev => { const n = new Set(prev); n.delete(memeId); return n; }); try { await axiosInstance.delete(`/api/favorites/${memeId}`); return true; } catch (error) { console.error("Failed to remove favorite:", error); setFavoriteIds(originalFavorites); return false; } }, [user, favoriteIds, loadingFavorites]);
+
     // Record View (Unchanged)
-    const recordView = useCallback(async (memeId) => { if (!user || !memeId || viewedIds.has(memeId)) return; setViewedIds(prev => new Set(prev).add(memeId)); try { await axiosInstance.post(`/api/history/${memeId}`); } catch (error) { console.error(`Failed to record view for meme ${memeId}:`, error); } }, [user, viewedIds]);
-    // isViewed Check (Unchanged)
-    const isViewed = useCallback((memeId) => { return !!user && viewedIds.has(memeId); }, [user, viewedIds]);
+    const recordView = useCallback(async (memeId) => { if (!user || !memeId) return; if (!sessionViewedIds.has(memeId)) { setSessionViewedIds(prev => new Set(prev).add(memeId)); } try { await axiosInstance.post(`/api/history/${memeId}`); } catch (error) { console.error(`Failed to record view for meme ${memeId} on backend:`, error); } }, [user, sessionViewedIds]);
 
-    // --- NEW: Get User Vote Status ---
-    // Returns 1 for upvote, -1 for downvote, 0 for no vote
-    const getUserVoteStatus = useCallback((memeId) => {
-        if (!user) return 0;
-        return userVotes[memeId] || 0; // Return stored vote or 0
-    }, [user, userVotes]);
+    // Get User Vote Status / Submit Vote (Unchanged)
+    const getUserVoteStatus = useCallback((memeId) => { if (!user) return 0; return userVotes[memeId] || 0; }, [user, userVotes]);
+    const submitVote = useCallback(async (memeId, voteType) => { if (!user) return { success: false, error: 'User not logged in' }; const voteTypeInt = voteType === 'upvote' ? 1 : -1; const currentVote = userVotes[memeId]; let optimisticVote = voteTypeInt; if (currentVote === voteTypeInt) { optimisticVote = 0; } const originalVotes = {...userVotes}; setUserVotes(prev => { const newVotes = {...prev}; if (optimisticVote === 0) { delete newVotes[memeId]; } else { newVotes[memeId] = optimisticVote; } return newVotes; }); try { const response = await axiosInstance.post(`/api/memes/${memeId}/${voteType}`); return { success: true, message: response.data.message }; } catch (error) { console.error(`Failed to submit ${voteType} for meme ${memeId}:`, error); setUserVotes(originalVotes); return { success: false, error: error.response?.data?.error || `Failed to ${voteType}.` }; } }, [user, userVotes]);
 
-    // --- NEW: Function to handle voting API call and update local state ---
-    // This will replace the direct API call in the page components' handleVote
-    const submitVote = useCallback(async (memeId, voteType) => { // voteType is 'upvote' or 'downvote'
-        if (!user) return { success: false, error: 'User not logged in' };
+    // Clear History (Unchanged)
+    const clearHistory = useCallback(async () => { if (!user) return { success: false, error: 'User not logged in' }; const originalSessionViewed = new Set(sessionViewedIds); try { const response = await axiosInstance.delete('/api/history/clear'); setSessionViewedIds(new Set()); return { success: true, message: response.data.message }; } catch (error) { console.error("Failed to clear history:", error); return { success: false, error: error.response?.data?.error || 'Failed to clear history.' }; } }, [user, sessionViewedIds]);
 
-        const voteTypeInt = voteType === 'upvote' ? 1 : -1;
-        const currentVote = userVotes[memeId]; // Get current vote from state
-        let optimisticVote = voteTypeInt;
 
-        // Determine optimistic state: if clicking same vote, new state is 0 (removed)
-        if (currentVote === voteTypeInt) {
-            optimisticVote = 0;
+    // *** CORRECTED isViewed Function ***
+    const isViewed = useCallback((memeId, memeData) => {
+        // Use 'user' state directly instead of 'isAuthenticated'
+        if (!user) return false;
+        // Check the flag from the backend API data first
+        if (memeData?.is_viewed) {
+            return true;
         }
+        // Otherwise, check if it was viewed during the current session
+        return sessionViewedIds.has(memeId);
+    // Update dependency to 'user'
+    }, [user, sessionViewedIds]);
 
-        // Optimistic UI update for local vote state
-        const originalVotes = {...userVotes};
-        setUserVotes(prev => {
-            const newVotes = {...prev};
-            if (optimisticVote === 0) {
-                delete newVotes[memeId]; // Remove vote
-            } else {
-                newVotes[memeId] = optimisticVote; // Set new vote
-            }
-            return newVotes;
-        });
 
-        try {
-            // API Call
-            const response = await axiosInstance.post(`/api/memes/${memeId}/${voteType}`);
-            // Success - optimistic state is correct based on backend logic
-             console.log("Vote successful:", response.data.message);
-            return { success: true, message: response.data.message };
-        } catch (error) {
-            console.error(`Failed to submit ${voteType} for meme ${memeId}:`, error);
-            // Revert local vote state on error
-            setUserVotes(originalVotes);
-            return { success: false, error: error.response?.data?.error || `Failed to ${voteType}.` };
-        }
-
-    }, [user, userVotes]); // Depends on user and current votes state
-
-    // --- Value provided by context ---
+    // Define value AFTER all functions are defined
     const value = {
         user, token, loading, login, register, logout: handleLogout,
-        isAuthenticated: !!user,
+        isAuthenticated: !!user, // Keep this for external consumption
         // Favorites
         favoriteIds, loadingFavorites, addFavorite, removeFavorite,
         isFavorite: (memeId) => favoriteIds.has(memeId),
         // Viewed Status
-        loadingViewed, isViewed, recordView,
-        // --- NEW: Votes ---
-        loadingVotes, // Add when fetchUserVotes is implemented
+        isViewed,      // Expose the corrected function
+        recordView,
+        // Votes
         getUserVoteStatus,
-        submitVote // Expose the new voting function
+        submitVote,
+        // History
+        clearHistory
     };
 
     return (

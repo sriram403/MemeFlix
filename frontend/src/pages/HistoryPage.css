@@ -3,10 +3,47 @@
     padding: 30px 5%;
 }
 
-.history-page h1 {
-    color: var(--text-light); margin-bottom: 10px; font-size: 1.8em;
-    font-weight: 500; border-left: 4px solid var(--accent-red); padding-left: 10px;
+/* NEW: Header styling */
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px; /* Adjust spacing */
 }
+
+.history-page h1 {
+    color: var(--text-light);
+    /* Remove margin-bottom if handled by header */
+    margin-bottom: 0;
+    font-size: 1.8em;
+    font-weight: 500;
+    border-left: 4px solid var(--accent-red);
+    padding-left: 10px;
+}
+
+/* NEW: Clear button styles */
+.clear-history-button {
+    background-color: var(--secondary-dark-bg);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    padding: 6px 12px;
+    font-size: 0.9em;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.clear-history-button:hover {
+    background-color: var(--accent-red);
+    border-color: var(--accent-red-hover);
+    color: var(--text-light);
+    box-shadow: 0 0 8px var(--accent-red-glow);
+}
+.clear-history-button:focus-visible {
+    outline: 2px solid var(--focus-outline-color);
+    outline-offset: 2px;
+    border-color: var(--focus-outline-color);
+}
+
 
 .history-subtitle {
     color: var(--text-secondary);
@@ -19,8 +56,17 @@
     padding: 60px 20px; text-align: center; font-size: 1.3em;
     color: var(--text-secondary); min-height: 200px; display: flex;
     justify-content: center; align-items: center;
+    /* Reuse info-message class if defined globally */
+    background-color: rgba(0,0,0, 0.1);
+    border-radius: 4px;
+    margin: 20px 0; /* Add margin like other info messages */
 }
 
 /* Ensure MemeGrid adapts */
 .history-page .meme-grid-container { padding: 0; }
-.history-page .meme-grid-container h2 { display: none; }
+.history-page .meme-grid-container h2 { display: none; } /* Hide default grid title */
+
+/* Add styles for loading spinner container */
+.history-page .loading-page-container { /* If using a wrapper */
+    margin: 20px 0;
+}
