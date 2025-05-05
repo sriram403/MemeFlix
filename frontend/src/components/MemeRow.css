@@ -1,7 +1,7 @@
 /* frontend/src/components/MemeRow.css */
 .meme-row-container {
     margin-bottom: 30px;
-    padding: 0; /* Remove horizontal padding here */
+    padding: 0; /* Keep padding on wrapper now */
     position: relative;
 }
 
@@ -10,21 +10,28 @@
     margin-bottom: 15px;
     font-size: 1.4em;
     font-weight: 500;
-    padding: 0 5%; /* Add padding here to align title */
+    padding: 0 5%; /* Align title with page content */
 }
 
-/* Wrapper remains relative for positioning arrows */
 .meme-row-wrapper {
     position: relative;
-    padding: 0 5%; /* Add horizontal padding to the wrapper */
+    padding: 0 5%; /* Padding determines space outside arrows */
 }
 
 .meme-row {
     display: flex;
     overflow-x: auto;
     overflow-y: hidden;
-    padding-bottom: 20px; /* Space for potential scrollbar ghost and hover */
-    /* No horizontal padding here anymore */
+    padding-bottom: 20px;
+    /* Add padding to sides to prevent content hiding behind arrows */
+    /* Adjust based on arrow width + desired spacing */
+    padding-left: 55px;
+    padding-right: 55px;
+    /* Clip content that goes into padding area */
+    clip-path: inset(0 45px 0 45px); /* Adjust values if needed */
+    /* Negative margin to visually fill the container width despite padding */
+    margin-left: -55px;
+    margin-right: -55px;
     gap: 10px;
     scroll-behavior: smooth;
     scrollbar-width: none;
@@ -38,64 +45,78 @@
     flex-shrink: 0;
     width: 250px;
     margin: 0;
-    /* Make sure cards are interactable */
     position: relative;
     z-index: 1;
 }
 
-.loading-row, .error-row {
-    color: var(--text-secondary);
-    height: 200px;
+.loading-row-placeholder { /* Wrapper for spinner in row */
     display: flex;
-    align-items: center;
     justify-content: center;
-    font-style: italic;
-    padding: 0 5%; /* Add padding if needed */
+    align-items: center;
+    min-height: 150px; /* Adjust as needed */
+    padding: 20px 0;
 }
+
 
 /* --- Scroll Arrow Styles --- */
 .scroll-arrow {
     position: absolute;
-    top: 45%; /* Adjust vertical position slightly */
-    transform: translateY(-50%);
-    z-index: 5; /* Lower than cards by default */
+    top: 50%; /* Center vertically */
+    transform: translateY(-50%); /* Fine-tune vertical centering */
+    z-index: 10; /* Above row content */
     background-color: rgba(20, 20, 20, 0.6);
     color: white;
     border: none;
     border-radius: 50%;
-    width: 45px; /* Slightly larger */
+    width: 45px;
     height: 45px;
     font-size: 2.2em;
-    line-height: 42px; /* Adjust line-height */
+    line-height: 42px; /* Adjust for vertical glyph centering */
     text-align: center;
     cursor: pointer;
-    opacity: 0;
-    transition: opacity 0.3s ease, background-color 0.2s ease;
+    opacity: 0; /* Hidden by default */
+    /* Define transitions on the base state */
+    transition: opacity 0.3s ease, background-color 0.2s ease, transform 0.2s ease;
     padding: 0;
-    pointer-events: none; /* Block interaction by default */
+    /* Make clickable area only the visible part */
+    pointer-events: none;
 }
 
 /* Show arrows and make them clickable ONLY when wrapper is hovered */
 .meme-row-wrapper:hover .scroll-arrow {
-    opacity: 1;
-    pointer-events: auto; /* Enable clicks ONLY on the arrow */
-    z-index: 15; /* Bring arrow above cards ONLY when hovered */
+    opacity: 0.8; /* Use opacity slightly less than 1 */
+    pointer-events: auto;
 }
 
+/* Hover effect for the arrow itself */
 .scroll-arrow:hover {
     background-color: rgba(20, 20, 20, 0.9);
+    opacity: 1; /* Full opacity on direct hover */
+    transform: translateY(-50%) scale(1.05); /* Add slight scale on hover, keep Y transform */
 }
 
+/* Focus state for accessibility */
+.scroll-arrow:focus-visible {
+     opacity: 1; /* Ensure visible on focus */
+     outline: 2px solid var(--focus-outline-color);
+     outline-offset: 2px;
+     background-color: rgba(20, 20, 20, 0.8); /* Darken slightly on focus */
+}
+.scroll-arrow:focus {
+    outline: none; /* Remove default */
+}
+
+
 .scroll-arrow.left-arrow {
-    /* Position just inside the wrapper's padding */
-    left: 10px;
+    /* Position inside the wrapper's padding */
+    left: 10px; /* Adjust as needed */
 }
 
 .scroll-arrow.right-arrow {
-     /* Position just inside the wrapper's padding */
-    right: 10px;
+     /* Position inside the wrapper's padding */
+    right: 10px; /* Adjust as needed */
 }
 
-.scroll-arrow:disabled {
+.scroll-arrow:disabled { /* Should not be needed if using show/hide state */
     display: none;
 }
