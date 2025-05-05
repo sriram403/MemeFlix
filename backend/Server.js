@@ -32,62 +32,84 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// --- Database Helper Functions (Unchanged) ---
+// Database Helpers (Unchanged)
 function runDb(sql, params = []) { return new Promise((resolve, reject) => { db.run(sql, params, function(err) { if (err) reject(err); else resolve(this); }); }); }
 function getDb(sql, params = []) { return new Promise((resolve, reject) => { db.get(sql, params, (err, row) => { if (err) reject(err); else resolve(row); }); }); }
 function allDb(sql, params = []) { return new Promise((resolve, reject) => { db.all(sql, params, (err, rows) => { if (err) reject(err); else resolve(rows); }); }); }
 
-// --- Auth Routes (Unchanged) ---
+// Auth Routes (Unchanged)
 app.post('/api/auth/register', async (req, res) => { const { username, email, password } = req.body; if (!username || !email || !password) return res.status(400).json({ error: 'Missing required fields.' }); try { const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS); const result = await runDb("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)", [username, email, hashedPassword]); res.status(201).json({ message: 'User registered.', userId: result.lastID }); } catch (err) { if (err.message.includes('UNIQUE')) return res.status(409).json({ error: 'Username or email already exists.' }); console.error("DB register error:", err.message); return res.status(500).json({ error: 'Database error.' }); } });
 app.post('/api/auth/login', async (req, res) => { const { username, password } = req.body; if (!username || !password) return res.status(400).json({ error: 'Missing fields.' }); try { const user = await getDb("SELECT * FROM users WHERE username = ?", [username]); if (!user) return res.status(401).json({ error: 'Invalid credentials.' }); const match = await bcrypt.compare(password, user.password_hash); if (match) { const userPayload = { id: user.id, username: user.username }; const accessToken = jwt.sign(userPayload, JWT_SECRET, { expiresIn: '1h' }); res.json({ accessToken: accessToken, user: userPayload }); } else { res.status(401).json({ error: 'Invalid credentials.' }); } } catch (err) { console.error("Login process error:", err.message); res.status(500).json({ error: 'Server error during login.' }); } });
 app.get('/api/auth/me', authenticateToken, async (req, res) => { try { const userRow = await getDb("SELECT id, username, email, created_at FROM users WHERE id = ?", [req.user.id]); if (!userRow) return res.status(404).json({ error: 'User not found' }); res.json(userRow); } catch (err) { console.error("DB /me error:", err.message); return res.status(500).json({ error: 'Database error' }); } });
 
-// --- Base Meme Select Query with Tags (Unchanged) ---
+// Base Meme Select Query (Unchanged)
 const baseMemeSelectFields = ` m.id, m.title, m.description, m.filename, m.type, m.filepath, m.upvotes, m.downvotes, m.uploaded_at, GROUP_CONCAT(t.name) as tags `;
 const baseMemeJoins = ` FROM memes m LEFT JOIN meme_tags mt ON m.id = mt.meme_id LEFT JOIN tags t ON mt.tag_id = t.tag_id `;
 
-// --- Meme Routes ---
+// Meme Routes (Unchanged except Search)
 app.get('/api/memes', async (req, res) => { const page = parseInt(req.query.page || '1', 10); const limit = parseInt(req.query.limit || '12', 10); if (isNaN(page) || page < 1 || isNaN(limit) || limit < 1) return res.status(400).json({ error: 'Invalid page/limit.' }); const offset = (page - 1) * limit; const sqlGetData = ` SELECT ${baseMemeSelectFields} ${baseMemeJoins} GROUP BY m.id ORDER BY m.uploaded_at DESC LIMIT ? OFFSET ? `; const sqlGetCount = `SELECT COUNT(*) as totalMemes FROM memes`; try { const [totalRow, memesForPage] = await Promise.all([ getDb(sqlGetCount), allDb(sqlGetData, [limit, offset]) ]); const totalMemes = totalRow?.totalMemes || 0; const totalPages = Math.ceil(totalMemes / limit); res.status(200).json({ memes: memesForPage || [], pagination: { currentPage: page, totalPages: totalPages, totalMemes: totalMemes, limit: limit } }); } catch (err) { console.error("DB fetch memes error:", err.message); res.status(500).json({ error: 'Failed to retrieve memes.' }); } });
 app.get('/api/memes/random', async (req, res) => { const sql = `SELECT ${baseMemeSelectFields} ${baseMemeJoins} WHERE m.id IS NOT NULL GROUP BY m.id ORDER BY RANDOM() LIMIT 1`; try { const randomMeme = await getDb(sql); if (!randomMeme) { return res.status(404).json({ error: 'No memes found.' }); } res.status(200).json({ meme: randomMeme }); } catch (err) { console.error("DB fetch random meme error:", err.message); res.status(500).json({ error: 'Failed to retrieve a random meme.' }); } });
 
-// --- UPDATED Search Endpoint ---
+// --- UPDATED Search Endpoint with Pagination ---
 app.get('/api/memes/search', async (req, res) => {
     const query = req.query.q || '';
     const filterType = req.query.type || '';
     const sortBy = req.query.sort || 'newest';
     const filterTag = req.query.tag || '';
+    // Get page and limit for pagination
+    const page = parseInt(req.query.page || '1', 10);
+    const limit = parseInt(req.query.limit || '12', 10); // Default limit
+
+    if (isNaN(page) || page < 1 || isNaN(limit) || limit < 1) {
+        return res.status(400).json({ error: 'Invalid page or limit parameter.' });
+    }
+    const offset = (page - 1) * limit;
 
     let whereClauses = [];
     let params = [];
     let joins = baseMemeJoins;
+    let countParams = []; // Separate params for the count query
 
     if (query) {
-        // *** Include filename in the search condition ***
-        whereClauses.push(`(lower(m.title) LIKE ? OR lower(m.description) LIKE ? OR lower(m.filename) LIKE ?)`);
+        const condition = `(lower(m.title) LIKE ? OR lower(m.description) LIKE ? OR lower(m.filename) LIKE ?)`;
+        whereClauses.push(condition);
         const searchTerm = `%${query.toLowerCase()}%`;
-        // Add the search term parameter three times
         params.push(searchTerm, searchTerm, searchTerm);
+        countParams.push(searchTerm, searchTerm, searchTerm); // Add to count params too
     }
 
     const validTypes = ['image', 'gif', 'video'];
     if (filterType && validTypes.includes(filterType.toLowerCase())) {
         whereClauses.push(`lower(m.type) = ?`);
         params.push(filterType.toLowerCase());
+        countParams.push(filterType.toLowerCase());
     }
 
     if (filterTag) {
-        joins = ` FROM memes m INNER JOIN meme_tags mt_filter ON m.id = mt_filter.meme_id INNER JOIN tags t_filter ON mt_filter.tag_id = t_filter.tag_id LEFT JOIN meme_tags mt ON m.id = mt.meme_id LEFT JOIN tags t ON mt.tag_id = t.tag_id `;
+        // Use INNER JOINs for filtering, they are needed for both data and count
+        joins = `
+            FROM memes m
+            INNER JOIN meme_tags mt_filter ON m.id = mt_filter.meme_id
+            INNER JOIN tags t_filter ON mt_filter.tag_id = t_filter.tag_id
+            LEFT JOIN meme_tags mt ON m.id = mt.meme_id
+            LEFT JOIN tags t ON mt.tag_id = t.tag_id
+        `;
         whereClauses.push(`lower(t_filter.name) = lower(?)`);
         params.push(filterTag);
+        countParams.push(filterTag);
+    } else {
+         // If not filtering by tag, ensure base joins are used for count query too
+         joins = baseMemeJoins;
     }
 
-    // Ensure there's always a base condition if others aren't added
+    // Base condition to avoid empty WHERE clause errors
     const baseCondition = 'm.id IS NOT NULL';
     const whereSql = whereClauses.length > 0
         ? `WHERE ${whereClauses.join(' AND ')}`
-        : `WHERE ${baseCondition}`; // Use base condition if no filters
+        : `WHERE ${baseCondition}`;
 
 
+    // Determine Ordering
     let orderBySql = 'ORDER BY ';
     switch (sortBy.toLowerCase()) {
         case 'oldest': orderBySql += 'm.uploaded_at ASC'; break;
@@ -95,56 +117,75 @@ app.get('/api/memes/search', async (req, res) => {
         case 'newest': default: orderBySql += 'm.uploaded_at DESC'; break;
     }
 
-    const sql = `
+    // --- SQL Query for fetching the data page ---
+    const sqlGetData = `
         SELECT ${baseMemeSelectFields}
         ${joins}
         ${whereSql}
         GROUP BY m.id
         ${orderBySql}
+        LIMIT ? OFFSET ?
+    `;
+    const dataParams = [...params, limit, offset]; // Combine filter params with limit/offset
+
+    // --- SQL Query for counting total matching results ---
+    // We need to count distinct meme IDs that match the criteria *before* grouping for tags
+    // Using a subquery to count distinct IDs based on the filtering criteria
+    const sqlGetCount = `
+        SELECT COUNT(DISTINCT m.id) as totalMemes
+        ${joins.replace(/LEFT JOIN meme_tags mt.*?LEFT JOIN tags t.*?$/s, '')} /* Remove tag joins used only for GROUP_CONCAT */
+        ${whereSql}
     `;
 
+
     try {
-        const rows = await allDb(sql, params);
-        res.status(200).json({ memes: rows || [] });
+        // Execute both queries
+        const [totalRow, memesForPage] = await Promise.all([
+            getDb(sqlGetCount, countParams),
+            allDb(sqlGetData, dataParams)
+        ]);
+
+        const totalMemes = totalRow?.totalMemes || 0;
+        const totalPages = Math.ceil(totalMemes / limit);
+
+        res.status(200).json({
+            memes: memesForPage || [],
+            pagination: { currentPage: page, totalPages: totalPages, totalMemes: totalMemes, limit: limit }
+        });
+
     } catch (err) {
         console.error("DB search error:", err.message);
-        console.error("SQL:", sql);
-        console.error("Params:", params);
+        console.error("SQL Count:", sqlGetCount);
+        console.error("Count Params:", countParams);
+        console.error("SQL Data:", sqlGetData);
+        console.error("Data Params:", dataParams);
         return res.status(500).json({ error: 'Search failed due to database error.' });
     }
 });
 
 
-// --- Related Tags Endpoint (Unchanged) ---
+// Related Tags Endpoint (Unchanged)
 app.get('/api/memes/:id/related-tags', async (req, res) => { const memeId = parseInt(req.params.id, 10); const limit = parseInt(req.query.limit || '5', 10); if (isNaN(memeId)) return res.status(400).json({ error: 'Invalid Meme ID.' }); if (isNaN(limit) || limit < 1) return res.status(400).json({ error: 'Invalid limit.' }); try { const originalTagsSql = `SELECT tag_id FROM meme_tags WHERE meme_id = ?`; const originalTagRows = await allDb(originalTagsSql, [memeId]); const originalTagIds = originalTagRows.map(row => row.tag_id); if (originalTagIds.length === 0) { return res.status(200).json({ relatedTags: [] }); } const placeholders = originalTagIds.map(() => '?').join(','); const relatedTagsSql = ` SELECT t.name, COUNT(t.tag_id) as frequency FROM meme_tags mt_sibling JOIN tags t ON mt_sibling.tag_id = t.tag_id WHERE mt_sibling.meme_id != ? AND mt_sibling.tag_id NOT IN (${placeholders}) AND mt_sibling.meme_id IN ( SELECT DISTINCT meme_id FROM meme_tags WHERE tag_id IN (${placeholders}) AND meme_id != ? ) GROUP BY mt_sibling.tag_id ORDER BY frequency DESC, t.name ASC LIMIT ? `; const params = [memeId, ...originalTagIds, ...originalTagIds, memeId, limit]; const relatedTags = await allDb(relatedTagsSql, params); res.status(200).json({ relatedTags: relatedTags.map(row => row.name) || [] }); } catch (err) { console.error(`Error fetching related tags for meme ${memeId}:`, err.message); res.status(500).json({ error: 'Failed to retrieve related tags.' }); } });
-
-// --- Other Tag Routes (Unchanged) ---
+// Other Tag Routes (Unchanged)
 app.get('/api/tags/popular', async (req, res) => { const limit = parseInt(req.query.limit || '10', 10); const sql = ` SELECT t.name as tag, COUNT(mt.meme_id) as count FROM tags t JOIN meme_tags mt ON t.tag_id = mt.tag_id GROUP BY t.tag_id ORDER BY count DESC, t.name ASC LIMIT ? `; try { const popularTags = await allDb(sql, [limit]); res.status(200).json({ popularTags: popularTags || [] }); } catch (err) { console.error("Error fetching popular tags:", err.message); return res.status(500).json({ error: 'Database error fetching tags.' }); } });
 app.get('/api/tags/all', async (req, res) => { const sql = `SELECT name FROM tags ORDER BY name ASC`; try { const tags = await allDb(sql); res.status(200).json({ tags: tags.map(t => t.name) || [] }); } catch (err) { console.error("Error fetching all tags:", err.message); return res.status(500).json({ error: 'Database error fetching all tags.' }); } });
 app.get('/api/memes/by-tag/:tag', async (req, res) => { const tag = req.params.tag; const limit = parseInt(req.query.limit || '10', 10); if (!tag) return res.status(400).json({ error: 'Tag parameter is required.' }); if (isNaN(limit) || limit < 1) return res.status(400).json({ error: 'Invalid limit parameter.' }); const sql = ` SELECT ${baseMemeSelectFields} FROM memes m INNER JOIN meme_tags mt_filter ON m.id = mt_filter.meme_id INNER JOIN tags t_filter ON mt_filter.tag_id = t_filter.tag_id LEFT JOIN meme_tags mt ON m.id = mt.meme_id LEFT JOIN tags t ON mt.tag_id = t.tag_id WHERE lower(t_filter.name) = lower(?) GROUP BY m.id ORDER BY RANDOM() LIMIT ?`; try { const rows = await allDb(sql, [tag, limit]); res.status(200).json({ memes: rows || [] }); } catch (err) { console.error(`Error fetching tag "${tag}":`, err.message); return res.status(500).json({ error: 'DB error fetching tag memes.' }); } });
-
-// --- Vote Routes (Unchanged) ---
+// Vote Routes (Unchanged)
 app.post('/api/memes/:id/upvote', async (req, res) => { const memeId = parseInt(req.params.id, 10); if (isNaN(memeId)) return res.status(400).json({ error: 'Invalid ID.' }); try { const result = await runDb(`UPDATE memes SET upvotes = upvotes + 1 WHERE id = ?`, [memeId]); if (result.changes === 0) return res.status(404).json({ error: 'Meme not found.' }); res.status(200).json({ message: 'Upvote successful.' }); } catch (err) { console.error(`Upvote error ${memeId}:`, err.message); return res.status(500).json({ error: 'Database error during upvote.' }); } });
 app.post('/api/memes/:id/downvote', async (req, res) => { const memeId = parseInt(req.params.id, 10); if (isNaN(memeId)) return res.status(400).json({ error: 'Invalid ID.' }); try { const result = await runDb(`UPDATE memes SET downvotes = downvotes + 1 WHERE id = ?`, [memeId]); if (result.changes === 0) return res.status(404).json({ error: 'Meme not found.' }); res.status(200).json({ message: 'Downvote successful.' }); } catch (err) { console.error(`Downvote error ${memeId}:`, err.message); return res.status(500).json({ error: 'Database error during downvote.' }); } });
-
-// --- Favorites Routes (Unchanged) ---
+// Favorites Routes (Unchanged)
 app.get('/api/favorites/ids', authenticateToken, async (req, res) => { try { const rows = await allDb("SELECT meme_id FROM user_favorites WHERE user_id = ?", [req.user.id]); res.status(200).json({ favoriteMemeIds: rows.map(r => r.meme_id) || [] }); } catch (err) { console.error("Fav IDs error:", err.message); return res.status(500).json({ error: 'DB error fetching favorite IDs.' }); } });
 app.get('/api/favorites', authenticateToken, async (req, res) => { const sql = ` SELECT ${baseMemeSelectFields} ${baseMemeJoins} JOIN user_favorites uf ON m.id = uf.meme_id WHERE uf.user_id = ? GROUP BY m.id ORDER BY uf.added_at DESC `; try { const rows = await allDb(sql, [req.user.id]); res.status(200).json({ memes: rows || [] }); } catch (err) { console.error("Fetch favs error:", err.message); return res.status(500).json({ error: 'DB error fetching favorites.' }); } });
 app.post('/api/favorites/:memeId', authenticateToken, async (req, res) => { const memeId = parseInt(req.params.memeId, 10); if (isNaN(memeId)) return res.status(400).json({ error: 'Invalid ID.' }); try { const result = await runDb("INSERT OR IGNORE INTO user_favorites (user_id, meme_id) VALUES (?, ?)", [req.user.id, memeId]); res.status(result.changes === 0 ? 200 : 201).json({ message: result.changes === 0 ? 'Already favorite.' : 'Added to favorites.' }); } catch (err) { console.error("Add fav error:", err.message); return res.status(500).json({ error: 'Database error adding favorite.' }); } });
 app.delete('/api/favorites/:memeId', authenticateToken, async (req, res) => { const memeId = parseInt(req.params.memeId, 10); if (isNaN(memeId)) return res.status(400).json({ error: 'Invalid ID.' }); try { const result = await runDb("DELETE FROM user_favorites WHERE user_id = ? AND meme_id = ?", [req.user.id, memeId]); if (result.changes === 0) return res.status(404).json({ error: 'Favorite not found.' }); res.status(200).json({ message: 'Removed from favorites.' }); } catch (err) { console.error("Remove fav error:", err.message); return res.status(500).json({ error: 'Database error removing favorite.' }); } });
-
-// --- History Routes (Unchanged) ---
+// History Routes (Unchanged)
 app.post('/api/history/:memeId', authenticateToken, async (req, res) => { const memeId = parseInt(req.params.memeId, 10); if (isNaN(memeId)) return res.status(400).json({ error: 'Invalid ID.' }); try { const memeExists = await getDb("SELECT id FROM memes WHERE id = ?", [memeId]); if (!memeExists) { return res.status(404).json({ error: 'Meme not found.' }); } await runDb("INSERT INTO viewing_history (user_id, meme_id) VALUES (?, ?)", [req.user.id, memeId]); res.status(201).json({ message: 'View recorded.' }); } catch (err) { console.error("Record history error:", err.message); return res.status(500).json({ error: 'DB error recording history.' }); } });
 app.get('/api/history', authenticateToken, async (req, res) => { const limit = parseInt(req.query.limit || '50', 10); const sql = ` SELECT ${baseMemeSelectFields}, h.viewed_at FROM ( SELECT meme_id, MAX(viewed_at) as viewed_at FROM viewing_history WHERE user_id = ? GROUP BY meme_id ) h JOIN memes m ON m.id = h.meme_id LEFT JOIN meme_tags mt ON m.id = mt.meme_id LEFT JOIN tags t ON mt.tag_id = t.tag_id GROUP BY m.id ORDER BY h.viewed_at DESC LIMIT ? `; try { const rows = await allDb(sql, [req.user.id, limit]); res.status(200).json({ memes: rows || [] }); } catch (err) { console.error("Fetch history error:", err.message); return res.status(500).json({ error: 'Database error fetching history.' }); } });
-
-// --- Media Route (Unchanged) ---
+// Media Route (Unchanged)
 app.get('/media/:filename', (req, res) => { const filename = req.params.filename; if (filename.includes('..') || filename.includes('/')) { return res.status(400).json({ error: 'Invalid filename.' }); } const filePath = path.join(__dirname, '../meme_files', filename); console.log(`[Media Route] Request for filename: ${filename}`); console.log(`[Media Route] Constructed file path: ${filePath}`); fs.access(filePath, fs.constants.R_OK, (err) => { if (err) { console.error(`[Media Route] File access error for ${filePath}:`, err); return res.status(404).json({ error: 'Media file not found.' }); } console.log(`[Media Route] File exists and is readable. Attempting to send: ${filePath}`); res.sendFile(filePath, (sendFileErr) => { if (sendFileErr) { if (!res.headersSent) { console.error(`[Media Route] Error sending file ${filename} (sendfile, headers not sent):`, sendFileErr); res.status(500).json({ error: 'Failed to send media file.' }); } else { console.error(`[Media Route] Error sending file ${filename} (sendfile, headers sent):`, sendFileErr); } } else { console.log(`[Media Route] Successfully sent file: ${filePath}`); } }); }); });
-
-// --- Root Route (Unchanged) ---
+// Root Route (Unchanged)
 app.get('/', (req, res) => res.send('Hello World from Memeflix Backend!'));
-
-// --- Start Server (Unchanged) ---
+// Start Server (Unchanged)
 app.listen(PORT, () => console.log(`Memeflix backend server running on http://localhost:${PORT}`));
-
-// --- Graceful Shutdown (Unchanged) ---
+// Graceful Shutdown (Unchanged)
 process.on('SIGINT', () => { console.log("SIGINT received. Closing database connection..."); db.close((err) => { if (err) { console.error('Error closing database on shutdown:', err.message); process.exit(1); } else { console.log('Database connection closed successfully.'); process.exit(0); } }); });
