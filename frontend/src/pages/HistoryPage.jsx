@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MemeGrid from '../components/MemeGrid';
 import MemeDetailModal from '../components/MemeDetailModal';
-import { useAuth, axiosInstance } from '../contexts/AuthContext'; // Import useAuth
+import { useAuth, axiosInstance } from '../contexts/AuthContext';
 import './HistoryPage.css';
 
 const API_BASE_URL = 'http://localhost:3001';
@@ -15,89 +15,77 @@ function HistoryPage() {
     const [selectedMeme, setSelectedMeme] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    // *** Get isViewed function and relevant states ***
-    // Note: All items on this page are inherently "viewed", but we still get
-    // the function and loading state for consistency and passing it down.
     const { isAuthenticated, addFavorite, removeFavorite, isFavorite, loadingFavorites, recordView, isViewed, loadingViewed } = useAuth();
     const navigate = useNavigate();
 
-    // Fetch viewing history
-    const fetchHistory = useCallback(async () => {
-        if (!isAuthenticated) {
-             setError("Please log in to view your history.");
-             setLoading(false);
-             return;
-        }
-        setLoading(true);
-        setError(null);
-        try {
-            const response = await axiosInstance.get('/api/history'); // Fetch full history
-            setHistoryMemes(response.data.memes || []);
-        } catch (err) {
-            console.error("Error fetching viewing history:", err);
-            setError('Failed to load your viewing history. Please try again.');
-            setHistoryMemes([]);
-        } finally {
-            setLoading(false);
-        }
-    }, [isAuthenticated, axiosInstance]);
+    // Fetch viewing history (Unchanged)
+    const fetchHistory = useCallback(async () => { if (!isAuthenticated) { setError("Please log in to view your history."); setLoading(false); return; } setLoading(true); setError(null); try { const response = await axiosInstance.get('/api/history'); setHistoryMemes(response.data.memes || []); } catch (err) { console.error("Error fetching viewing history:", err); setError('Failed to load your viewing history. Please try again.'); setHistoryMemes([]); } finally { setLoading(false); } }, [isAuthenticated]); // Removed axiosInstance dep
+    useEffect(() => { fetchHistory(); }, [fetchHistory]);
 
-    useEffect(() => {
-        fetchHistory();
-        // Viewed IDs are fetched by AuthContext
-    }, [fetchHistory]);
+    // Modal Handlers (Unchanged)
+    const openModal = useCallback((meme) => { setSelectedMeme(meme); setIsModalOpen(true); /* No recordView needed */ }, []);
+    const closeModal = useCallback(() => { setIsModalOpen(false); setSelectedMeme(null); }, []);
 
-    // Modal Handlers
-    const openModal = (meme) => {
-        setSelectedMeme(meme);
-        setIsModalOpen(true);
-        // No need to call recordView here, it's already in history
-    };
-    const closeModal = () => {
-        setIsModalOpen(false);
-        setSelectedMeme(null);
-    };
-
-    // Vote Handler (updates selectedMeme if open)
+    // *** UPDATED handleVote ***
     const handleVote = useCallback(async (memeId, voteType) => {
-        if (!isAuthenticated) return;
-        const originalMemes = [...historyMemes]; // Keep original for modal revert
-
-        // Optimistic update for modal state if open
-        if (selectedMeme?.id === memeId) {
-            const originalSelectedMeme = {...selectedMeme};
-             setSelectedMeme(prev => ({ ...prev, upvotes: voteType === 'upvote' ? (prev.upvotes ?? 0) + 1 : prev.upvotes, downvotes: voteType === 'downvote' ? (prev.downvotes ?? 0) + 1 : prev.downvotes }));
-            try {
-                await axiosInstance.post(`${API_BASE_URL}/api/memes/${memeId}/${voteType}`);
-                // Also update the item in the history list state for consistency
-                setHistoryMemes(prev => prev.map(m => m.id === memeId ? { ...m, upvotes: voteType === 'upvote' ? (m.upvotes ?? 0) + 1 : m.upvotes, downvotes: voteType === 'downvote' ? (m.downvotes ?? 0) + 1 : m.downvotes } : m));
-            } catch (err) {
-                console.error(`Error ${voteType}ing meme:`, err);
-                alert(`Failed to record ${voteType}. Please try again.`);
-                setSelectedMeme(originalSelectedMeme); // Revert modal state
-                // No need to revert historyMemes state as it wasn't optimistically updated
-            }
-        } else {
-             // If voting happens from somewhere else (shouldn't) just update backend & local list
-             try {
-                 await axiosInstance.post(`${API_BASE_URL}/api/memes/${memeId}/${voteType}`);
-                 // Update the item in the history list state
-                 setHistoryMemes(prev => prev.map(m => m.id === memeId ? { ...m, upvotes: voteType === 'upvote' ? (m.upvotes ?? 0) + 1 : m.upvotes, downvotes: voteType === 'downvote' ? (m.downvotes ?? 0) + 1 : m.downvotes } : m));
-             } catch (err) {
-                 console.error(`Error ${voteType}ing meme:`, err);
-                 alert(`Failed to record ${voteType}.`);
-             }
+        if (!isAuthenticated) {
+            alert("Please log in to vote.");
+            return;
         }
-    }, [isAuthenticated, selectedMeme, historyMemes, axiosInstance]); // Add historyMemes dependency
 
-    // Favorite Toggle Handler
-    const handleFavoriteToggle = useCallback(async (memeId) => {
-        if (!isAuthenticated || loadingFavorites) return;
-        const currentlyFavorite = isFavorite(memeId);
-        const action = currentlyFavorite ? removeFavorite : addFavorite;
-        await action(memeId);
-        // No local state change needed here, relies on AuthContext
-    }, [isAuthenticated, loadingFavorites, isFavorite, addFavorite, removeFavorite]);
+        // Store original states
+        const originalHistoryMemes = [...historyMemes];
+        const originalSelectedMeme = selectedMeme ? {...selectedMeme} : null;
+
+        // --- Optimistic UI Update ---
+        // 1. Update the main 'historyMemes' list state
+        setHistoryMemes(prevMemes => prevMemes.map(m => {
+            if (m.id === memeId) {
+                const currentUpvotes = m.upvotes ?? 0;
+                const currentDownvotes = m.downvotes ?? 0;
+                return {
+                    ...m,
+                    upvotes: voteType === 'upvote' ? currentUpvotes + 1 : currentUpvotes,
+                    downvotes: voteType === 'downvote' ? currentDownvotes + 1 : currentDownvotes,
+                };
+            }
+            return m;
+        }));
+
+        // 2. Update the 'selectedMeme' state if the voted meme is open in the modal
+        if (selectedMeme?.id === memeId) {
+             setSelectedMeme(prev => {
+                 if (!prev) return null;
+                 const currentUpvotes = prev.upvotes ?? 0;
+                 const currentDownvotes = prev.downvotes ?? 0;
+                 return {
+                    ...prev,
+                    upvotes: voteType === 'upvote' ? currentUpvotes + 1 : currentUpvotes,
+                    downvotes: voteType === 'downvote' ? currentDownvotes + 1 : currentDownvotes,
+                 }
+             });
+        }
+        // --- End Optimistic UI Update ---
+
+        // --- API Call ---
+        try {
+            await axiosInstance.post(`${API_BASE_URL}/api/memes/${memeId}/${voteType}`);
+            // Success: Optimistic update stays
+        } catch (err) {
+            // --- Revert UI on Error ---
+            console.error(`Error ${voteType}ing meme:`, err);
+            setError(`Failed to record ${voteType}. Please try again.`);
+            setHistoryMemes(originalHistoryMemes); // Revert the main list
+            if (originalSelectedMeme && selectedMeme?.id === memeId) {
+                 setSelectedMeme(originalSelectedMeme); // Revert the modal state
+            }
+            // --- End Revert UI ---
+        }
+    // Depend on states needed for update/revert
+    }, [isAuthenticated, historyMemes, selectedMeme, axiosInstance]); // Add historyMemes
+
+    // Favorite Toggle Handler (Unchanged)
+    const handleFavoriteToggle = useCallback(async (memeId) => { if (!isAuthenticated || loadingFavorites) return; const currentlyFavorite = isFavorite(memeId); const action = currentlyFavorite ? removeFavorite : addFavorite; await action(memeId); }, [isAuthenticated, loadingFavorites, isFavorite, addFavorite, removeFavorite]);
 
     return (
         <div className="history-page">
@@ -105,27 +93,22 @@ function HistoryPage() {
             <p className="history-subtitle">Memes you've recently watched.</p>
 
             <MemeGrid
-                memes={historyMemes}
-                loading={loading || loadingViewed} // Combine loading states
+                memes={historyMemes} // Pass updated list
+                loading={loading || loadingViewed}
                 error={error}
                 onMemeClick={openModal}
-                onVote={handleVote}
+                onVote={handleVote} // Pass updated handler
                 onFavoriteToggle={handleFavoriteToggle}
-                // Pass isViewed check - technically always true here, but pass for consistency
-                isMemeViewed={(memeId) => !loadingViewed && isViewed(memeId)}
+                isMemeViewed={(memeId) => !loadingViewed && isViewed(memeId)} // Pass view check
             />
 
-             {/* Message if history is empty */}
-             {!loading && !error && historyMemes.length === 0 && (
-                 <div className="empty-history-message">You haven't viewed any memes yet. Go watch some!</div>
-             )}
-
+             {!loading && !error && historyMemes.length === 0 && ( <div className="empty-history-message">You haven't viewed any memes yet. Go watch some!</div> )}
 
             {isModalOpen && selectedMeme && (
                 <MemeDetailModal
-                    meme={selectedMeme}
+                    meme={selectedMeme} // Pass updated modal state
                     onClose={closeModal}
-                    onVote={handleVote}
+                    onVote={handleVote} // Pass updated handler
                     onFavoriteToggle={handleFavoriteToggle}
                 />
             )}
