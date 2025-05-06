@@ -9,7 +9,7 @@ import Spinner from '../components/Spinner';
 import { useAuth, axiosInstance } from '../contexts/AuthContext';
 import './HomePage.css';
 
-const API_BASE_URL = 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
 function HomePage() {
     const [featuredMeme, setFeaturedMeme] = useState(null);

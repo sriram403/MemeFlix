@@ -9,7 +9,7 @@ import Spinner from '../components/Spinner';
 import { useAuth, axiosInstance } from '../contexts/AuthContext';
 import './BrowsePage.css';
 
-const API_BASE_URL = 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 const DEFAULT_PAGE_LIMIT = 12;
 
 function BrowsePage() {
