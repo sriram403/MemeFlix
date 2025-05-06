@@ -14,3 +14,7 @@ meme_files/
 Thumbs.db
 
 prompt.txt
+
+node_modules/
+.env
+memeflix.db 

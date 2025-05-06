@@ -1,0 +1,25 @@
+# General OS generated files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# IDE and editor directories/files (optional, but common)
+.vscode/
+!.vscode/extensions.json # If you want to share recommended VSCode extensions
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Any other top-level files/folders you don't want to track
+# For example, if you had a top-level .env for some reason:
+# .env
