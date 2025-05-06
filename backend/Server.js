@@ -864,9 +864,9 @@ app.get('/', (req, res) => {
 
 // --- 404 Handler for API routes ---
 // This should be placed after all other routes
-app.use('/api/*', (req, res) => {
-    res.status(404).json({ error: 'API endpoint not found.' });
-});
+// app.use('/api/*', (req, res) => {
+//     res.status(404).json({ error: 'API endpoint not found.' });
+// });
 
 
 // --- Start Server ---
