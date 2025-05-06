@@ -7,8 +7,8 @@ import './MemeDetailModal.css';
 import './FavoriteButton.css';
 import { useAuth, axiosInstance } from '../contexts/AuthContext'; // No longer need getUserVoteStatus from here
 
-const MEDIA_BASE_URL = 'http://localhost:3001/media';
-const API_BASE_URL = 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+const MEDIA_BASE_URL = `${API_BASE_URL}/media`;
 const FRONTEND_BASE_URL = window.location.origin;
 
 function MemeDetailModal({ meme, onClose, onVote, onFavoriteToggle }) {

@@ -4,7 +4,8 @@ import './MemeCard.css';
 import './FavoriteButton.css';
 import { useAuth } from '../contexts/AuthContext';
 
-const MEDIA_BASE_URL = 'http://localhost:3001/media';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+const MEDIA_BASE_URL = `${API_BASE_URL}/media`;
 
 // Add the new isViewed prop
 function MemeCard({ meme, onCardClick, onFavoriteToggle, isViewed = false }) {
